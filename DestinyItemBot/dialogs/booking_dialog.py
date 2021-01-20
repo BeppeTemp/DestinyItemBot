@@ -34,86 +34,66 @@ class BookingDialog(CancelAndHelpDialog):
 
         self.initial_dialog_id = WaterfallDialog.__name__
 
-    async def destination_step(
-        self, step_context: WaterfallStepContext
-    ) -> DialogTurnResult:
-        """
-        If a destination city has not been provided, prompt for one.
-        :param step_context:
-        :return DialogTurnResult:
-        """
+    async def destination_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+
+        #If a destination city has not been provided, prompt for one.
+        #:param step_context:
+        #:return DialogTurnResult:
+        
         booking_details = step_context.options
 
         if booking_details.destination is None:
             message_text = "Where would you like to travel to?"
-            prompt_message = MessageFactory.text(
-                message_text, message_text, InputHints.expecting_input
-            )
-            return await step_context.prompt(
-                TextPrompt.__name__, PromptOptions(prompt=prompt_message)
-            )
+            prompt_message = MessageFactory.text(message_text, message_text, InputHints.expecting_input)
+            return await step_context.prompt(TextPrompt.__name__, PromptOptions(prompt=prompt_message))
+
         return await step_context.next(booking_details.destination)
 
     async def origin_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        """
-        If an origin city has not been provided, prompt for one.
-        :param step_context:
-        :return DialogTurnResult:
-        """
+
+        #If an origin city has not been provided, prompt for one.
+        #:param step_context:
+        #:return DialogTurnResult:
+        
         booking_details = step_context.options
 
         # Capture the response to the previous step's prompt
         booking_details.destination = step_context.result
         if booking_details.origin is None:
             message_text = "From what city will you be travelling?"
-            prompt_message = MessageFactory.text(
-                message_text, message_text, InputHints.expecting_input
-            )
-            return await step_context.prompt(
-                TextPrompt.__name__, PromptOptions(prompt=prompt_message)
-            )
+            prompt_message = MessageFactory.text(message_text, message_text, InputHints.expecting_input)
+            return await step_context.prompt(TextPrompt.__name__, PromptOptions(prompt=prompt_message))
+
         return await step_context.next(booking_details.origin)
 
-    async def travel_date_step(
-        self, step_context: WaterfallStepContext
-    ) -> DialogTurnResult:
-        """
-        If a travel date has not been provided, prompt for one.
-        This will use the DATE_RESOLVER_DIALOG.
-        :param step_context:
-        :return DialogTurnResult:
-        """
+    async def travel_date_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+        
+        #If a travel date has not been provided, prompt for one.
+        #This will use the DATE_RESOLVER_DIALOG.
+        #:param step_context:
+        #:return DialogTurnResult:
+        
         booking_details = step_context.options
 
         # Capture the results of the previous step
         booking_details.origin = step_context.result
-        if not booking_details.travel_date or self.is_ambiguous(
-            booking_details.travel_date
-        ):
-            return await step_context.begin_dialog(
-                DateResolverDialog.__name__, booking_details.travel_date
-            )
+        if not booking_details.travel_date or self.is_ambiguous(booking_details.travel_date):
+            return await step_context.begin_dialog(DateResolverDialog.__name__, booking_details.travel_date)
+
         return await step_context.next(booking_details.travel_date)
 
-    async def confirm_step(
-        self, step_context: WaterfallStepContext
-    ) -> DialogTurnResult:
-        """
-        Confirm the information the user has provided.
-        :param step_context:
-        :return DialogTurnResult:
-        """
+    async def confirm_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+        
+        #Confirm the information the user has provided.
+        #:param step_context:
+        #:return DialogTurnResult:
+        
         booking_details = step_context.options
 
         # Capture the results of the previous step
         booking_details.travel_date = step_context.result
-        message_text = (
-            f"Please confirm, I have you traveling to: { booking_details.destination } from: "
-            f"{ booking_details.origin } on: { booking_details.travel_date}."
-        )
-        prompt_message = MessageFactory.text(
-            message_text, message_text, InputHints.expecting_input
-        )
+        message_text = (f"Please confirm, I have you traveling to: { booking_details.destination } from: "f"{ booking_details.origin } on: { booking_details.travel_date}.")
+        prompt_message = MessageFactory.text(message_text, message_text, InputHints.expecting_input)
 
         # Offer a YES/NO prompt.
         return await step_context.prompt(
@@ -121,15 +101,15 @@ class BookingDialog(CancelAndHelpDialog):
         )
 
     async def final_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        """
-        Complete the interaction and end the dialog.
-        :param step_context:
-        :return DialogTurnResult:
-        """
+        
+        #Complete the interaction and end the dialog.
+        #:param step_context:
+        #:return DialogTurnResult:
+        
         if step_context.result:
             booking_details = step_context.options
-
             return await step_context.end_dialog(booking_details)
+            
         return await step_context.end_dialog()
 
     def is_ambiguous(self, timex: str) -> bool:

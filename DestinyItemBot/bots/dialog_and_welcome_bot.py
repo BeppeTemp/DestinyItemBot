@@ -14,9 +14,8 @@ from .dialog_bot import DialogBot
 
 class DialogAndWelcomeBot(DialogBot):
 
-    async def on_members_added_activity(
-        self, members_added: List[ChannelAccount], turn_context: TurnContext
-    ):
+    async def on_members_added_activity(self, members_added: List[ChannelAccount], turn_context: TurnContext):
+
         for member in members_added:
             # Greet anyone that was not the target (recipient) of this message.
             # To learn more about Adaptive Cards, see https://aka.ms/msbot-adaptivecards for more details.
@@ -24,11 +23,7 @@ class DialogAndWelcomeBot(DialogBot):
                 welcome_card = self.create_adaptive_card_attachment()
                 response = MessageFactory.attachment(welcome_card)
                 await turn_context.send_activity(response)
-                await DialogHelper.run_dialog(
-                    self.dialog,
-                    turn_context,
-                    self.conversation_state.create_property("DialogState"),
-                )
+                await DialogHelper.run_dialog(self.dialog, turn_context, self.conversation_state.create_property("DialogState"))
 
     # Load attachment from file.
     def create_adaptive_card_attachment(self):
@@ -37,6 +32,4 @@ class DialogAndWelcomeBot(DialogBot):
         with open(path) as card_file:
             card = json.load(card_file)
 
-        return Attachment(
-            content_type="application/vnd.microsoft.card.adaptive", content=card
-        )
+        return Attachment(content_type="application/vnd.microsoft.card.adaptive", content=card)

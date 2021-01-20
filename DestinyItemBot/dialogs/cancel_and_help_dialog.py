@@ -14,6 +14,7 @@ from botbuilder.core import MessageFactory
 class CancelAndHelpDialog(ComponentDialog):
     async def on_continue_dialog(self, inner_dc: DialogContext) -> DialogTurnResult:
         result = await self.interrupt(inner_dc)
+
         if result is not None:
             return result
 
@@ -24,18 +25,14 @@ class CancelAndHelpDialog(ComponentDialog):
             text = inner_dc.context.activity.text.lower()
 
             help_message_text = "Show Help..."
-            help_message = MessageFactory.text(
-                help_message_text, help_message_text, InputHints.expecting_input
-            )
+            help_message = MessageFactory.text(help_message_text, help_message_text, InputHints.expecting_input)
 
             if text in ("help", "?"):
                 await inner_dc.context.send_activity(help_message)
                 return DialogTurnResult(DialogTurnStatus.Waiting)
 
             cancel_message_text = "Cancelling"
-            cancel_message = MessageFactory.text(
-                cancel_message_text, cancel_message_text, InputHints.ignoring_input
-            )
+            cancel_message = MessageFactory.text(cancel_message_text, cancel_message_text, InputHints.ignoring_input)
 
             if text in ("cancel", "quit"):
                 await inner_dc.context.send_activity(cancel_message)
