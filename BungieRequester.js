@@ -2,21 +2,53 @@ const axios = require("axios");
 
 const path = require('path');
 const dotenv = require('dotenv');
+const { INVOKE_RESPONSE_KEY } = require("botbuilder");
 const ENV_FILE = path.join(__dirname, '.env');
 dotenv.config({ path: ENV_FILE });
 
 const {BungieApiKey} = process.env;
 
 class BungieRequester {
-    constructor(apiKey) {
+    constructor(apiKey,clientId, callBack) {
         this.basePath = "https://www.bungie.net/Platform";
+        this.baseLoginPath = "https://www.bungie.net/en/oauth/authorize?";
+
         this.apiKey = apiKey;
+        this.clientId = clientId;
+        this.callBack = callBack;
     }
+
+    get loginlink(){
+        var responseType = "response_type=code&";
+        var callBackUri = "redirect_uri="+this.callBack+"&";
+        var state = "state=6i0mkLx79Hp91nzWVeHrzHG4";
+
+        return this.baseLoginPath+responseType+"client_id="+this.clientId+"&"+callBackUri+state;
+    }
+
+    accessToken(code){
+        var response = (async () => {
+            return await axios.post(this.basePath +'/app/oauth/token/',{
+                    data: {
+                        client_id : this.clientId,
+                        grant_type : "authorization_code",
+                        code : code
+                    }
+                })
+            })()
+
+            response.then(function(result){
+                console.log(result.response);
+            })
+            .catch(function(error){
+                console.log(error.response);
+            });
+    }
+
 
     test(){
         var response = (async () => {
-            return await axios.get(this.basePath + '/Destiny/Manifest/InventoryItem/1274330687/', 
-            { 
+            return await axios.get(this.basePath + '/Destiny/Manifest/InventoryItem/1274330687/',{ 
                 headers: {'X-API-Key': this.apiKey } 
             })
         })()
@@ -30,5 +62,6 @@ class BungieRequester {
     }
 }
 
-var br = new BungieRequester(process.env.BungieApiKey);
-br.test();
+var br = new BungieRequester(process.env.BungieApiKey, process.env.BungieClientId, process.env.BungieCallBack);
+console.log(br.loginlink);
+br.accessToken("2b65c01bab385109a948b0bc4ebccb68");
