@@ -3,7 +3,7 @@
 
 const { ActivityHandler, MessageFactory } = require('botbuilder');
 
-class EchoBot extends ActivityHandler {
+class DetinyItemBot extends ActivityHandler {
     constructor(conversationState, userState, dialog) {
         super();
 
@@ -47,4 +47,4 @@ class EchoBot extends ActivityHandler {
     }
 }
 
-module.exports.EchoBot = EchoBot;
+module.exports.DetinyItemBot = DetinyItemBot;
