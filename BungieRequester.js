@@ -20,8 +20,6 @@ class BungieRequester {
         this.apiKey = apiKey;
         this.clientId = clientId;
         this.callBack = callBack;
-
-        
     }
 
     get loginlink(){
@@ -58,14 +56,26 @@ class BungieRequester {
 
         return res;
     }
+
+    async getMemberShipID(membershipId, membershipType){
+
+        return await axios.get(this.basePath+'/User/GetMembershipsById/'+membershipId+'/'+membershipType+'/', {
+            headers: {
+                "X-API-Key": this.apiKey
+            }
+        })
+        .then(result => {
+            return result.data.Response.primaryMembershipId;
+        }).catch(error => {
+            console.log(error.data);
+        });
+    }
 }
 
 var br = new BungieRequester(process.env.BungieApiKey, process.env.BungieClientId, process.env.BungieCallBack);
 console.log(br.loginlink);
-
 async function test(){
-    let a = await br.getAccessData("22476253f0c9c7b9d38af5b387f1fe20");
-    console.log(a.access_token);
+    let mid = await br.getAccessData("1b318f39047a35fa4647eb79fe1c67bc");
+    console.log(await br.getMemberShipID(4392828, 1));
 }
-
 test();
