@@ -1,6 +1,8 @@
 // Import required types from libraries
 const {
+    ActionTypes,
     ActivityTypes,
+    CardFactory,
     MessageFactory,
     InputHints
 } = require('botbuilder');

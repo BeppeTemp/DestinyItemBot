@@ -3,7 +3,7 @@
 
 const { ActivityHandler, MessageFactory } = require('botbuilder');
 
-class DIBbot extends ActivityHandler {
+class EchoBot extends ActivityHandler {
     constructor(conversationState, userState, dialog) {
         super();
 
@@ -47,4 +47,4 @@ class DIBbot extends ActivityHandler {
     }
 }
 
-module.exports.DIBbot = DIBbot;
+module.exports.EchoBot = EchoBot;
