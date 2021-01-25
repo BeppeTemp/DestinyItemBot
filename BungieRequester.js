@@ -1,4 +1,5 @@
 const axios = require("axios");
+const qs = require("qs");
 
 const path = require('path');
 const dotenv = require('dotenv');
@@ -7,6 +8,8 @@ const ENV_FILE = path.join(__dirname, '.env');
 dotenv.config({ path: ENV_FILE });
 
 const {BungieApiKey} = process.env;
+
+
 
 class BungieRequester {
     constructor(apiKey,clientId, callBack) {
@@ -18,6 +21,8 @@ class BungieRequester {
         this.callBack = callBack;
     }
 
+    
+
     get loginlink(){
         var responseType = "response_type=code&";
         var callBackUri = "redirect_uri="+this.callBack+"&";
@@ -27,14 +32,15 @@ class BungieRequester {
     }
 
     accessToken(code){
+
+        const data = {
+            client_id : this.clientId,
+            grant_type : "authorization_code",
+            code : code
+        }
+        
         var response = (async () => {
-            return await axios.post(this.basePath +'/app/oauth/token/',{
-                    data: {
-                        client_id : this.clientId,
-                        grant_type : "authorization_code",
-                        code : code
-                    }
-                })
+            return await axios.post(this.basePath +'/app/oauth/token/',qs.stringify(data))
             })()
 
             response.then(function(result){
