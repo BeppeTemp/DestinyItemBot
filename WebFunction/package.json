@@ -6,6 +6,9 @@
     "start": "func start",
     "test": "echo \"No tests yet...\""
   },
-  "dependencies": {},
+  "dependencies": {
+    "@azure/storage-queue": "^12.3.0",
+    "qs": "^6.9.6"
+  },
   "devDependencies": {}
 }
