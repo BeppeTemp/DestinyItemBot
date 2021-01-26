@@ -1,0 +1,4 @@
+CosmoDB per inserire il manifesto, per l'aggiornamento: eliminare e inserire exnovo
+Funtion App per il login causa 15 secondi del bot( link su telegram del motivo) 
+Altri tipi di funtion app per non far scadere il bot(?)
+coda che sta nello storage per pushare e poppare il codice del login.

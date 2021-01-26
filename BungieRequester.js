@@ -105,7 +105,7 @@ class BungieRequester {
 var br = new BungieRequester(process.env.BungieApiKey, process.env.BungieClientId, process.env.BungieCallBack);
 console.log(br.loginlink);
 async function test() {
-    br.getVendor("b5a17acdcd3f5705fd35596f9abd1f7d",1,0,672118013)
+    br.getVendor("a5b655f83e4598d0aeec70e14d490239",1,0,672118013)
 }
 test();
 
