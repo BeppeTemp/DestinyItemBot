@@ -16,6 +16,7 @@
         "url": "https://github.com"
     },
     "dependencies": {
+        "@azure/storage-queue": "^12.3.0",
         "axios": "^0.21.1",
         "axis": "^1.0.0",
         "botbuilder": "~4.10.3",
