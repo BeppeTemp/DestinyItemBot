@@ -17,9 +17,10 @@ const newItem = {
 //  </DefineNewItem>
 
 async function downloadManifest() {
+  // @ts-ignore
   return await axios.get("https://www.bungie.net/common/destiny2_content/json/it/DestinyInventoryItemliteDefinition-28e06178-b2e8-420e-99ca-311865aaf5f0.json")
     .then(result => {
-      console.log("Manifest Scaricato");
+      console.log("Manifest Scaricato \n");
 
       return result.data;
     }).catch(error => {
@@ -42,16 +43,13 @@ async function main() {
   // </CreateClientObjectDatabaseContainer>
 
   try {
-    // <CreateItem>
-    /** Create new item
-     * newItem is defined at the top of this file
-     */
 
     var Manifest = await downloadManifest();
+    console.log("Avvio upload degli item \n")
 
     for(let i=0;i<Object.keys(Manifest).length;i++){
       await container.items.create(Manifest[Object.keys(Manifest)[i]]);
-      console.log("Item "+i+" caricato");
+      console.log("Item "+i+" caricato su "+ Object.keys(Manifest).length);
     }
 
     // </CreateItem>
