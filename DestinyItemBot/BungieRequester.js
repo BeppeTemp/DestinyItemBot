@@ -128,7 +128,7 @@ class BungieRequester {
             }
         })
             .then(result => {
-                console.log(result.data.Response.sales.data);
+                console.log(result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]]);
             }).catch(error => {
                 console.log(error);
             });
