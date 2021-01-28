@@ -4,21 +4,13 @@ const CosmosClient = require("@azure/cosmos").CosmosClient;
 const axios = require("axios");
 const config = require("./config");
 const dbContext = require("./databaseContext");
-//  </ImportConfiguration>
 
-//  <DefineNewItem>
-const newItem = {
-  id: "3",
-  category: "fun",
-  name: "Cosmos DB",
-  description: "Complete Cosmos DB Node.js Quickstart ⚡",
-  isComplete: false
-};
-//  </DefineNewItem>
 
 async function downloadManifest() {
+  console.log("Download manifest avviato \n")
+
   // @ts-ignore
-  return await axios.get("https://www.bungie.net/common/destiny2_content/json/it/DestinyInventoryItemliteDefinition-28e06178-b2e8-420e-99ca-311865aaf5f0.json")
+  return await axios.get("https://www.bungie.net/common/destiny2_content/json/it/DestinyInventoryItemDefinition-28e06178-b2e8-420e-99ca-311865aaf5f0.json")
     .then(result => {
       console.log("Manifest Scaricato \n");
 
@@ -35,25 +27,31 @@ async function main() {
 
   const client = new CosmosClient({ endpoint, key });
 
+  await client.database(databaseId).delete();
+  console.log("Database Eliminato \n");
+
   const database = client.database(databaseId);
   const container = database.container(containerId);
 
   // Make sure Tasks database is already setup. If not, create it.
   await dbContext.create(client, databaseId, containerId);
-  // </CreateClientObjectDatabaseContainer>
 
   try {
-
     var Manifest = await downloadManifest();
+
     console.log("Avvio upload degli item \n")
 
     for(let i=0;i<Object.keys(Manifest).length;i++){
-      await container.items.create(Manifest[Object.keys(Manifest)[i]]);
+      var item = Manifest[Object.keys(Manifest)[i]];
+      item.id=Object.keys(Manifest)[i]
+
+      await container.items.create(item);
+
       console.log("Item "+i+" caricato su "+ Object.keys(Manifest).length);
+      if (i % 100 == 0){
+        console.clear();
+      }
     }
-
-    // </CreateItem>
-
   } catch (err) {
     console.log(err.message);
   }

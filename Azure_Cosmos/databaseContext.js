@@ -16,6 +16,9 @@ async function create(client, databaseId, containerId) {
   });
   console.log(`Database creato: ${database.id}\n`);
 
+
+
+
   /**
    * Create the container if it does not exist
    */
@@ -25,9 +28,8 @@ async function create(client, databaseId, containerId) {
       { id: containerId, partitionKey },
       { offerThroughput: 400 }
     );
-
+    
   console.log(`Container creato: ${container.id}\n`);
 }
 
 module.exports = { create };
-  //  </createDatabaseAndContainer>
