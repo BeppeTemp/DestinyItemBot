@@ -1,6 +1,7 @@
 const axios = require("axios");
 const qs = require("qs");
 const { QueueServiceClient } = require("@azure/storage-queue");
+const { CosmosClient } = require("@azure/cosmos");
 const { promisify } = require('util')
 const sleep = promisify(setTimeout)
 
@@ -115,23 +116,49 @@ class BungieRequester {
             });
     }
 
-    async getVendor(membershipType, character, vendorHash){
-
+    async getGunsmith(membershipType, character){
+        const vendorHash = 672118013;
+        
         var accessdata = await this.getAccessData();
         var membershipPlatformId = await this.getPlatformID(await accessdata.membership_id, membershipType);
         var characterId = await this.getCharacterId (await membershipPlatformId, membershipType, character);
 
-        await axios.get(this.basePath + '/Destiny2/'+ membershipType +'/Profile/'+ membershipPlatformId+'/Character/'+ characterId +'/Vendors/'+ vendorHash +'/?components=402', {
+        var mods = await axios.get(this.basePath + '/Destiny2/'+ membershipType +'/Profile/'+ membershipPlatformId+'/Character/'+ characterId +'/Vendors/'+ vendorHash +'/?components=402', {
             headers: {
                 "X-API-Key": this.apiKey,
                 "Authorization" : "Bearer " + accessdata.access_token
             }
         })
-            .then(result => {
-                console.log(result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]]);
-            }).catch(error => {
-                console.log(error);
-            });
+        .then(result => {
+            var mods = {
+                first: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[2]],
+                second: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[3]]
+            }
+            return mods;
+        }).catch(error => {
+            console.log(error);
+        });
+
+        const querySpec = { query: "SELECT * from c WHERE c.id=\""+mods.first.itemHash+"\" OR c.id=\""+mods.second.itemHash+"\""};
+
+        const DbSettings = {
+            endpoint: process.env.EndPoint,
+            key: process.env.Key
+        }
+
+        const client = new CosmosClient(DbSettings);
+        const database = client.database(process.env.DataBaseId);
+        const container = database.container(process.env.ContainerId);
+
+        const { resources: items } = await container.items.query(querySpec).fetchAll();
+
+        console.log(items[0].displayProperties.name);
+        console.log(items[1].displayProperties.name);
+
+    }
+
+    async getSpider(membershipType,character){
+        
     }
 
 
@@ -140,7 +167,7 @@ var br = new BungieRequester(process.env.BungieApiKey, process.env.BungieClientI
 
 async function test() {
     console.log(await br.loginlink());
-    br.getVendor(1,2,672118013);
+    br.getGunsmith(1,2);
 }
 test();
 
