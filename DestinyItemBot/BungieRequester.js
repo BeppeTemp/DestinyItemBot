@@ -152,9 +152,44 @@ class BungieRequester {
 
         const { resources: items } = await container.items.query(querySpec).fetchAll();
 
-        console.log(items[0].displayProperties.name);
-        console.log(items[1].displayProperties.name);
+        const check = await this.checkMod(membershipPlatformId,membershipType,items);
 
+        if (check[0] == 64){
+            var modOneString = items[0].displayProperties.name+" - "+items[0].itemTypeDisplayName+ " (Già acquistata)";
+        }else{
+            var modOneString = items[0].displayProperties.name+" - "+items[0].itemTypeDisplayName+ " (Non acquistata)";
+        }
+
+        if (check[1] == 64){
+            var modTwoString = items[1].displayProperties.name+" - "+items[1].itemTypeDisplayName+ " (Già acquistata)";
+        }else{
+            var modTwoString = items[1].displayProperties.name+" - "+items[1].itemTypeDisplayName+ " (Non acquistata)";
+        }
+        
+        const mod = {
+            modOne: modOneString,
+            modTwo: modTwoString
+        }
+
+        return mod;
+
+    }
+
+    async checkMod(membershipPlatformId,membershipType,items){
+        var checkList = await axios.get(this.basePath + '/Destiny2/'+ membershipType +'/Profile/'+ membershipPlatformId+'/?components=800', {
+            headers: {
+                "X-API-Key": this.apiKey,
+            }
+        })
+        .then(result => {
+            return result.data.Response.profileCollectibles.data.collectibles;
+        }).catch(error => {
+            console.log(error);
+        });
+
+        const check = [checkList[items[0].collectibleHash].state,checkList[items[1].collectibleHash].state];
+
+        return check;
     }
 
     async getSpider(membershipType,character){
@@ -167,7 +202,11 @@ var br = new BungieRequester(process.env.BungieApiKey, process.env.BungieClientI
 
 async function test() {
     console.log(await br.loginlink());
-    br.getGunsmith(1,2);
+    const mod = await br.getGunsmith(1,2);
+    console.log(mod.modOne);
+    console.log(mod.modTwo);
 }
 test();
 
+//observer sulla coda
+//migliorare l'upload del db (bulk)
