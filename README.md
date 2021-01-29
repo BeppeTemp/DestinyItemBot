@@ -1,8 +1,5 @@
-# Echo_Bot
+# Destiny Item Bot
 
-non lo so
-
-This bot has been created using [Bot Framework](https://dev.botframework.com), it shows how to create a simple bot that accepts input from the user and echoes it back.
 
 ## Prerequisites
 
