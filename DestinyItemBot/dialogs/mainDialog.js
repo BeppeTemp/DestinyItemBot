@@ -1,15 +1,16 @@
-// Import required types from libraries
-const { ActionTypes, ActivityTypes, CardFactory, MessageFactory, InputHints } = require('botbuilder');
+//Importazione di vari moduli
+const { ActivityTypes, MessageFactory, InputHints } = require('botbuilder');
 const { TextPrompt, ComponentDialog, DialogSet, DialogTurnStatus, WaterfallDialog } = require('botbuilder-dialogs');
 const { LuisRecognizer } = require('botbuilder-ai');
 const { BungieRequester } = require('../API/BungieRequester');
 
+//Importazione del .env
 const path = require('path');
 const dotenv = require('dotenv');
-const { request } = require('http');
 const ENV_FILE = path.join(__dirname, '../.env');
 dotenv.config({ path: ENV_FILE });
 
+//Queste a che servono ?
 const MAIN_DIALOG = 'MAIN_DIALOG';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
 const TEXT_PROMPT = 'TEXT_PROMPT';
@@ -75,7 +76,6 @@ class MainDialog extends ComponentDialog {
 
     // Forwards to the correct dialog based on the menu option or the intent recognized by LUIS
     async vendorStep(step) {
-
         const reply = {
             type: ActivityTypes.Message
         };
@@ -87,16 +87,8 @@ class MainDialog extends ComponentDialog {
             if (this.accessdata.access_token==null){
                 reply.text = "Non sei loggato, effettura l'accesso a questo link: " + this.br.loginlink();
                 await step.context.sendActivity(reply)
-
                 this.accessdata = await this.br.getAccessData();
-                
-                console.log("sono nell' if")
-                console.log(this.accessdata);
             }
-            console.log(this.accessdata);
-
-            console.log("sono qui")
-
             const mod = await this.br.getGunsmith(this.accessdata,1,2);
             
             reply.text = mod.modOne +"\n"+mod.modTwo;
@@ -117,6 +109,5 @@ class MainDialog extends ComponentDialog {
         return await step.replaceDialog(this.id);
     }
 }
-
 module.exports.MainDialog = MainDialog;
 module.exports.MAIN_DIALOG = MAIN_DIALOG;

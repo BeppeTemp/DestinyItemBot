@@ -1,7 +1,5 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
-
-const { ActivityHandler, MessageFactory } = require('botbuilder');
+//Importazione dei servizi Azure
+const { ActivityHandler } = require('botbuilder');
 
 class DetinyItemBot extends ActivityHandler {
     constructor(conversationState, userState, dialog) {
@@ -35,16 +33,12 @@ class DetinyItemBot extends ActivityHandler {
         });
     }
 
-    /**
-     * Override the ActivityHandler.run() method to save state changes after the bot logic completes.
-     */
+    //Override the ActivityHandler.run() method to save state changes after the bot logic completes.
     async run(context) {
         await super.run(context);
-
         // Save any state changes. The load happened during the execution of the Dialog.
         await this.conversationState.saveChanges(context, false);
         await this.userState.saveChanges(context, false);
     }
 }
-
 module.exports.DetinyItemBot = DetinyItemBot;
