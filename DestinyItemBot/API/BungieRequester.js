@@ -141,15 +141,13 @@ class BungieRequester {
 
     //Ritorna le mod in vendita del armaiolo
     async getGunsmith(accessdata, membershipType, character) {
-        const vendorHash = 672118013;
-
         var membershipPlatformId = await this.getPlatformID(await accessdata.membership_id, membershipType);
         var characterId = await this.getCharacterId(await membershipPlatformId, membershipType, character);
 
-        var mods = await axios.get(this.basePath + '/Destiny2/' + membershipType + '/Profile/' + membershipPlatformId + '/Character/' + characterId + '/Vendors/' + vendorHash + '/?components=402', {
+        var mods = await axios.get(this.basePath + '/Destiny2/' + membershipType + '/Profile/' + membershipPlatformId + '/Character/' + characterId + '/Vendors/' + process.env.Gunsmith + '/?components=402', {
             headers: {
                 "X-API-Key": this.apiKey,
-                "Authorization": "Bearer " + accessdata.access_token
+                "Authorization": accessdata.token_type + " " + accessdata.access_token
             }
         })
             .then(result => {
@@ -198,11 +196,51 @@ class BungieRequester {
     }
 
     //Ritorna i materiali in vendita dal ragno
-    async getSpider(membershipType, character) {
+    async getSpider(accessdata, membershipType, character) {
     }
 
     //Ritorna gli item venduti da Xur
-    async getXur(){
+    async getXur(accessdata, membershipType, character) {
+        var membershipPlatformId = await this.getPlatformID(await accessdata.membership_id, membershipType);
+        var characterId = await this.getCharacterId(await membershipPlatformId, membershipType, character);
+
+        var itemHash = await axios.get(this.basePath + '/Destiny2/' + membershipType + '/Profile/' + membershipPlatformId + '/Character/' + characterId + '/Vendors/' + process.env.xur + '/?components=402', {
+            headers: {
+                "X-API-Key": this.apiKey,
+                "Authorization": accessdata.token_type + " " + accessdata.access_token
+            }
+        })
+            .then(result => {
+                var itemHash = {
+                    one: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]],
+                    two: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[1]],
+                    three: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[2]],
+                    four: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[3]],
+                }
+                return itemHash;
+            }).catch(error => {
+                console.log(error);
+            });
+
+        const querySpec = { query: "SELECT * from c WHERE c.id=\"" + itemHash.one.itemHash + "\" OR c.id=\"" + itemHash.two.itemHash + "\" OR c.id=\"" + itemHash.three.itemHash + "\" OR c.id=\"" + itemHash.four.itemHash + "\""};
+
+        const DbSettings = {
+            endpoint: process.env.EndPoint,
+            key: process.env.Key
+        }
+        
+        const client = new CosmosClient(DbSettings);
+        const database = client.database(process.env.DataBaseId);
+        const container = database.container(process.env.ContainerId);
+
+        const { resources: items } = await container.items.query(querySpec).fetchAll();
+
+        console.log(items[0].displayProperties.name);
+        console.log(items[1].displayProperties.name);
+        console.log(items[2].displayProperties.name);
+        console.log(items[3].displayProperties.name);
+
+        //bisogna formattare bene la cosa (come sono fatti gli item li trovi sul DB)
     }
 }
 module.exports.BungieRequester = BungieRequester;

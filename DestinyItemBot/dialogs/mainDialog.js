@@ -83,6 +83,7 @@ class MainDialog extends ComponentDialog {
         // Call LUIS and gather user request.
         const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
 
+        //Mostra l'invetraio dell'armaiolo
         if (LuisRecognizer.topIntent(luisResult) === 'GetGunsmith') {
             if (this.accessdata.access_token==null){
                 reply.text = "Non sei loggato, effettura l'accesso a questo link: " + this.br.loginlink();
@@ -94,10 +95,28 @@ class MainDialog extends ComponentDialog {
             reply.text = mod.modOne +"\n"+mod.modTwo;
             await step.context.sendActivity(reply)
         }
+        
+        //Mostra l'invetraio del ragno
         if (LuisRecognizer.topIntent(luisResult) === "GetSpider") {
             reply.text = "Sembra che tu abbia richiesto di vedere l'inventario del ragno.";
             await step.context.sendActivity(reply)
         }
+
+        //Mostra l'invetraio di Xur
+        if (LuisRecognizer.topIntent(luisResult) === "GetXur") {
+            if (this.accessdata.access_token==null){
+                reply.text = "Non sei loggato, effettura l'accesso a questo link: " + this.br.loginlink();
+                await step.context.sendActivity(reply)
+                this.accessdata = await this.br.getAccessData();
+            }
+
+            this.br.getXur(this.accessdata,1,2);
+
+            reply.text = "Sembra che tu abbia richiesto di vedere l'inventario di Xur.";
+            await step.context.sendActivity(reply)
+        }
+
+        //Richiesta non supportata
         if (LuisRecognizer.topIntent(luisResult) === "None") {
             reply.text = "Mi dispiace ma non sono in grado di aiutarti.";
             await step.context.sendActivity(reply)
