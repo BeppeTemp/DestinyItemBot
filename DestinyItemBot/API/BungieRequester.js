@@ -7,7 +7,7 @@ const sleep = promisify(setTimeout)
 
 const path = require('path');
 const dotenv = require('dotenv');
-const ENV_FILE = path.join(__dirname, '.env');
+const ENV_FILE = path.join(__dirname, '../.env');
 dotenv.config({ path: ENV_FILE });
 
 class BungieRequester {
@@ -22,21 +22,22 @@ class BungieRequester {
         this.state=Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     }
 
-    async loginlink() {
-
-
+    loginlink() {
         var responseType = "response_type=code&";
         var callBackUri = "redirect_uri=" + this.callBack + "&";
         var state = "state=" + this.state;
-
         return this.baseLoginPath + responseType + "client_id=" + this.clientId + "&" + callBackUri + state;
     }
 
+    //è un problema di state che non vien trovato nella coda
     async getOauthCode(){
         const queueServiceClient = QueueServiceClient.fromConnectionString(process.env.StorageAccountEndPoint);
         
         var queues;
         var flag=0;
+
+        console.log("dentro auth");
+        console.log(this.state);
     
         while(!flag){
             queues = await (await queueServiceClient.listQueues().byPage().next()).value.queueItems;
@@ -69,11 +70,15 @@ class BungieRequester {
             membership_id: null
         }
 
+        console.log("dentro il metodo");
+
         const data = {
             client_id: this.clientId,
             grant_type: "authorization_code",
             code: await this.getOauthCode()
         }
+
+        console.log("dopo auth il metodo");
 
         await axios.post(this.basePath + '/app/oauth/token/', qs.stringify(data))
             .then(result => {
@@ -116,10 +121,9 @@ class BungieRequester {
             });
     }
 
-    async getGunsmith(membershipType, character){
+    async getGunsmith(accessdata, membershipType, character){
         const vendorHash = 672118013;
-        
-        var accessdata = await this.getAccessData();
+    
         var membershipPlatformId = await this.getPlatformID(await accessdata.membership_id, membershipType);
         var characterId = await this.getCharacterId (await membershipPlatformId, membershipType, character);
 
@@ -192,21 +196,12 @@ class BungieRequester {
         return check;
     }
 
-    async getSpider(membershipType,character){
-        
+    async getSpider(membershipType,character){   
     }
 
 
 }
-var br = new BungieRequester(process.env.BungieApiKey, process.env.BungieClientId, process.env.BungieCallBack);
-
-async function test() {
-    console.log(await br.loginlink());
-    const mod = await br.getGunsmith(1,2);
-    console.log(mod.modOne);
-    console.log(mod.modTwo);
-}
-test();
+module.exports.BungieRequester = BungieRequester;
 
 //observer sulla coda
 //migliorare l'upload del db (bulk)

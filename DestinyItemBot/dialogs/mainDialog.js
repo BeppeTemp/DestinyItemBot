@@ -1,21 +1,14 @@
 // Import required types from libraries
-const {
-    ActionTypes,
-    ActivityTypes,
-    CardFactory,
-    MessageFactory,
-    InputHints
-} = require('botbuilder');
-const {
-    TextPrompt,
-    ComponentDialog,
-    DialogSet,
-    DialogTurnStatus,
-    WaterfallDialog
-} = require('botbuilder-dialogs');
-const {
-    LuisRecognizer
-} = require('botbuilder-ai');
+const { ActionTypes, ActivityTypes, CardFactory, MessageFactory, InputHints } = require('botbuilder');
+const { TextPrompt, ComponentDialog, DialogSet, DialogTurnStatus, WaterfallDialog } = require('botbuilder-dialogs');
+const { LuisRecognizer } = require('botbuilder-ai');
+const { BungieRequester } = require('../API/BungieRequester');
+
+const path = require('path');
+const dotenv = require('dotenv');
+const { request } = require('http');
+const ENV_FILE = path.join(__dirname, '../.env');
+dotenv.config({ path: ENV_FILE });
 
 const MAIN_DIALOG = 'MAIN_DIALOG';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
@@ -37,6 +30,15 @@ class MainDialog extends ComponentDialog {
             this.vendorStep.bind(this),
             this.loopStep.bind(this)
         ]));
+
+        this.br = new BungieRequester(process.env.BungieApiKey, process.env.BungieClientId, process.env.BungieCallBack);
+
+        this.accessdata = {
+            access_token: null,
+            token_type: null,
+            expires_in: null,
+            membership_id: null
+        }
 
         this.initialDialogId = WATERFALL_DIALOG;
     }
@@ -73,6 +75,7 @@ class MainDialog extends ComponentDialog {
 
     // Forwards to the correct dialog based on the menu option or the intent recognized by LUIS
     async vendorStep(step) {
+
         const reply = {
             type: ActivityTypes.Message
         };
@@ -81,14 +84,29 @@ class MainDialog extends ComponentDialog {
         const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
 
         if (LuisRecognizer.topIntent(luisResult) === 'GetGunsmith') {
-            reply.text = "Sembra che tu abbia richiesto di vedere l'inventario dell'armaiolo.";
+            if (this.accessdata.access_token==null){
+                reply.text = "Non sei loggato, effettura l'accesso a questo link: " + this.br.loginlink();
+                await step.context.sendActivity(reply)
+
+                this.accessdata = await this.br.getAccessData();
+                
+                console.log("sono nell' if")
+                console.log(this.accessdata);
+            }
+            console.log(this.accessdata);
+
+            console.log("sono qui")
+
+            const mod = await this.br.getGunsmith(this.accessdata,1,2);
+            
+            reply.text = mod.modOne +"\n"+mod.modTwo;
             await step.context.sendActivity(reply)
-        } 
-        if (LuisRecognizer.topIntent(luisResult) === "GetSpider"){
+        }
+        if (LuisRecognizer.topIntent(luisResult) === "GetSpider") {
             reply.text = "Sembra che tu abbia richiesto di vedere l'inventario del ragno.";
             await step.context.sendActivity(reply)
-        } 
-        if (LuisRecognizer.topIntent(luisResult) === "None"){
+        }
+        if (LuisRecognizer.topIntent(luisResult) === "None") {
             reply.text = "Mi dispiace ma non sono in grado di aiutarti.";
             await step.context.sendActivity(reply)
         }
