@@ -69,7 +69,7 @@ class MainDialog extends ComponentDialog {
             return await step.next();
         }
 
-        var messageText = 'Come posso aiutarti ?';
+        var messageText = 'Come posso aiutarti ? modifica';
         const promptMessage = MessageFactory.text(messageText, InputHints.ExpectingInput);
         return await step.prompt(TEXT_PROMPT, {
             prompt: promptMessage
