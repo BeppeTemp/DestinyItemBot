@@ -26,22 +26,18 @@ class MainDialog extends ComponentDialog {
         this.userState = userState;
 
         // Adding used dialogs
-        this.addDialog(new TextPrompt(TEXT_PROMPT));
-        this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
+        this.addDialog(new TextPrompt(TEXT_PROMPT))
+            .addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
+            this.loginStep.bind(this),
             this.welcomeStep.bind(this),
             this.vendorStep.bind(this),
             this.loopStep.bind(this)
         ]));
 
+        this.userState.accessdata = null;
+
         //Inizializzazione del BungieRequester
         this.br = new BungieRequester(process.env.BungieApiKey, process.env.BungieClientId, process.env.BungieCallBack);
-
-        this.accessdata = {
-            access_token: null,
-            token_type: null,
-            expires_in: null,
-            membership_id: null
-        }
 
         this.initialDialogId = WATERFALL_DIALOG;
     }
@@ -60,6 +56,27 @@ class MainDialog extends ComponentDialog {
             await dialogContext.beginDialog(this.id);
         }
     }
+    //login step
+    async loginStep (step){
+        const reply = {
+            type: ActivityTypes.Message
+        };
+
+        console.log("SDFGHJKL");
+        console.log(this.userState.accessdata);
+
+        if(this.userState.accessdata == null){
+            reply.text = "Sembra che tu non sia loggato, clicca su link: " + this.br.loginlink();
+            await step.context.sendActivity(reply)
+            this.userState.accessdata = await this.br.getAccessData();
+            
+        }else{
+            reply.text = "Salve guardiano non so ancora il tuo nome ma ci sto lavorado (sei loggato)";
+            await step.context.sendActivity(reply)
+        }
+
+        return await step.next();
+    }
 
     // Welcome message, forward the text to next step
     async welcomeStep(step) {
@@ -69,7 +86,7 @@ class MainDialog extends ComponentDialog {
             return await step.next();
         }
 
-        var messageText = 'Come posso aiutarti ? modifica';
+        var messageText = 'Come posso aiutarti ?';
         const promptMessage = MessageFactory.text(messageText, InputHints.ExpectingInput);
         return await step.prompt(TEXT_PROMPT, {
             prompt: promptMessage
@@ -87,12 +104,8 @@ class MainDialog extends ComponentDialog {
 
         //Mostra l'invetraio dell'armaiolo
         if (LuisRecognizer.topIntent(luisResult) === 'GetGunsmith') {
-            if (this.accessdata.access_token==null){
-                reply.text = "Non sei loggato, effettura l'accesso a questo link: " + this.br.loginlink();
-                await step.context.sendActivity(reply)
-                this.accessdata = await this.br.getAccessData();
-            }
-            const mod = await this.br.getGunsmith(this.accessdata,1,2);
+
+            const mod = await this.br.getGunsmith(this.userState.accessdata,1,2);
             
             reply.text = mod.modOne +"\n"+mod.modTwo;
             await step.context.sendActivity(reply)
@@ -106,13 +119,8 @@ class MainDialog extends ComponentDialog {
 
         //Mostra l'invetraio di Xur
         if (LuisRecognizer.topIntent(luisResult) === "GetXur") {
-            if (this.accessdata.access_token==null){
-                reply.text = "Non sei loggato, effettura l'accesso a questo link: " + this.br.loginlink();
-                await step.context.sendActivity(reply)
-                this.accessdata = await this.br.getAccessData();
-            }
 
-            this.br.getXur(this.accessdata,1,2);
+            this.br.getXur(this.userState.accessdata,1,2);
 
             reply.text = "Sembra che tu abbia richiesto di vedere l'inventario di Xur.";
             await step.context.sendActivity(reply)
