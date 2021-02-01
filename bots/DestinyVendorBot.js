@@ -1,9 +1,7 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
+//Importazione dei servizi Azure
+const { ActivityHandler } = require('botbuilder');
 
-const { ActivityHandler} = require('botbuilder');
-
-class DIBbot extends ActivityHandler {
+class DestinyVendorBot extends ActivityHandler {
     constructor(conversationState, userState, dialog) {
         super();
 
@@ -20,7 +18,7 @@ class DIBbot extends ActivityHandler {
             const membersAdded = context.activity.membersAdded;
             for (let cnt = 0; cnt < membersAdded.length; ++cnt) {
                 if (membersAdded[cnt].id !== context.activity.recipient.id) {
-                    await context.sendActivity('Salve Guardiano, sono il DestinyItemBot come posso aiutarti ?');
+                    await context.sendActivity('Salve Guardiano, sono il DestinyItemBot.');
                     await this.dialog.run(context, this.dialogState);
                 }
             }
@@ -35,16 +33,12 @@ class DIBbot extends ActivityHandler {
         });
     }
 
-    /**
-     * Override the ActivityHandler.run() method to save state changes after the bot logic completes.
-     */
+    //Override the ActivityHandler.run() method to save state changes after the bot logic completes.
     async run(context) {
         await super.run(context);
-
         // Save any state changes. The load happened during the execution of the Dialog.
         await this.conversationState.saveChanges(context, false);
         await this.userState.saveChanges(context, false);
     }
 }
-
-module.exports.DIBbot = DIBbot;
+module.exports.DestinyVendorBot = DestinyVendorBot;

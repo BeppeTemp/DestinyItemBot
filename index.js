@@ -1,26 +1,13 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
-
-// Read environment variables from .env file
 const path = require('path');
-const ENV_FILE = path.join(__dirname, '.env');
-require('dotenv').config({
-    path: ENV_FILE
-});
-
+const dotenv = require('dotenv');
 const restify = require('restify');
+const { BotFrameworkAdapter, ConversationState, MemoryStorage, UserState} = require('botbuilder');
 
-// Import required bot services.
-// See https://aka.ms/bot-services to learn more about the different parts of a bot.
-const { 
-    BotFrameworkAdapter,
-    ConversationState,
-    MemoryStorage,
-    UserState
-} = require('botbuilder');
-
+//Creazione del path per il .env file
+const ENV_FILE = path.join(__dirname, '.env');
+dotenv.config({ path: ENV_FILE });
 // This bot's main dialog.
-const { DIBbot } = require('./bots/DIBbot');
+const { DestinyVendorBot } = require('./bots/DestinyVendorBot');
 // Import main dialog
 const { MainDialog } = require('./dialogs/mainDialog');
 // Import LUIS
@@ -36,23 +23,12 @@ server.listen(process.env.port || process.env.PORT || 3978, () => {
 
 // Create adapter.
 // See https://aka.ms/about-bot-adapter to learn more about how bots work.
-const adapter = new BotFrameworkAdapter({
-    appId: process.env.MicrosoftAppId,
-    appPassword: process.env.MicrosoftAppPassword
-});
+const adapter = new BotFrameworkAdapter({appId: process.env.MicrosoftAppId, appPassword: process.env.MicrosoftAppPassword });
 
 // Create LUIS Recognizer
 // Update these values with the ones taken from Azure LUIS
-const {
-    LuisAppId,
-    LuisAPIKey,
-    LuisAPIHostName
-} = process.env;
-const luisConfig = {
-    applicationId: LuisAppId,
-    endpointKey: LuisAPIKey,
-    endpoint: `https://${ LuisAPIHostName }`
-};
+const { LuisAppId, LuisAPIKey, LuisAPIHostName } = process.env;
+const luisConfig = { applicationId: LuisAppId, endpointKey: LuisAPIKey, endpoint: `https://${ LuisAPIHostName }` };
 const luisRecognizer = new DIBrecognizer(luisConfig);
 
 // Create conversation and user state with in-memory storage provider
@@ -62,7 +38,7 @@ const userState = new UserState(memoryStorage);
 
 // Create the bot and the main dialog
 const dialog = new MainDialog(luisRecognizer, userState);
-const bot = new DIBbot(conversationState, userState, dialog);
+const bot = new DestinyVendorBot(conversationState, userState, dialog);
 
 // Listen for incoming requests.
 server.post('/api/messages', (req, res) => {

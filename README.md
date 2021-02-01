@@ -1,8 +1,4 @@
-# Echo_Bot
-
-non lo so
-
-This bot has been created using [Bot Framework](https://dev.botframework.com), it shows how to create a simple bot that accepts input from the user and echoes it back.
+# DestinyItemBot
 
 ## Prerequisites
 
@@ -20,11 +16,16 @@ This bot has been created using [Bot Framework](https://dev.botframework.com), i
     ```bash
     npm install
     ```
+- Install modules axios
+
+   ```bash
+    npm install axios
+    ```
 
 - Start the bot
 
     ```bash
-    npm start
+    node index.js
     ```
 
 ## Testing the bot using Bot Framework Emulator

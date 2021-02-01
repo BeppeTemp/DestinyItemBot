@@ -1,3 +1,4 @@
+//Importazione di vari moduli
 const { LuisRecognizer } = require('botbuilder-ai');
 
 class DIBrecognizer {
@@ -7,7 +8,6 @@ class DIBrecognizer {
             const recognizerOptions = {
                 apiVersion: 'v3'
             };
-
             this.recognizer = new LuisRecognizer(config, recognizerOptions);
         }
     }
@@ -23,5 +23,4 @@ class DIBrecognizer {
         return await this.recognizer.recognize(context);
     }
 }
-
 module.exports.DIBrecognizer = DIBrecognizer;

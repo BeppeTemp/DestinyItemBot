@@ -1,20 +1,16 @@
-// Import required types from libraries
-const {
-    ActivityTypes,
-    MessageFactory,
-    InputHints
-} = require('botbuilder');
-const {
-    TextPrompt,
-    ComponentDialog,
-    DialogSet,
-    DialogTurnStatus,
-    WaterfallDialog
-} = require('botbuilder-dialogs');
-const {
-    LuisRecognizer
-} = require('botbuilder-ai');
+//Importazione di vari moduli
+const { ActivityTypes, MessageFactory, InputHints } = require('botbuilder');
+const { TextPrompt, ComponentDialog, DialogSet, DialogTurnStatus, WaterfallDialog } = require('botbuilder-dialogs');
+const { LuisRecognizer } = require('botbuilder-ai');
+const { BungieRequester } = require('../API/BungieRequester');
 
+//Importazione del .env
+const path = require('path');
+const dotenv = require('dotenv');
+const ENV_FILE = path.join(__dirname, '../.env');
+dotenv.config({ path: ENV_FILE });
+
+//Queste a che servono ?
 const MAIN_DIALOG = 'MAIN_DIALOG';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
 const TEXT_PROMPT = 'TEXT_PROMPT';
@@ -24,6 +20,7 @@ class MainDialog extends ComponentDialog {
     constructor(luisRecognizer, userState) {
         super(MAIN_DIALOG);
 
+        //Verifica connessione con LUIS
         if (!luisRecognizer) throw new Error('[MainDialog]: Missing parameter \'luisRecognizer\' is required');
         this.luisRecognizer = luisRecognizer;
         this.userState = userState;
@@ -35,6 +32,16 @@ class MainDialog extends ComponentDialog {
             this.vendorStep.bind(this),
             this.loopStep.bind(this)
         ]));
+
+        //Inizializzazione del BungieRequester
+        this.br = new BungieRequester(process.env.BungieApiKey, process.env.BungieClientId, process.env.BungieCallBack);
+
+        this.accessdata = {
+            access_token: null,
+            token_type: null,
+            expires_in: null,
+            membership_id: null
+        }
 
         this.initialDialogId = WATERFALL_DIALOG;
     }
@@ -62,8 +69,8 @@ class MainDialog extends ComponentDialog {
             return await step.next();
         }
 
-        var messageText = step.options.restartMsg ? step.options.restartMsg : 'Come posso aiutarti ?';
-        const promptMessage = MessageFactory.text(messageText, messageText, InputHints.ExpectingInput);
+        var messageText = 'Come posso aiutarti ?';
+        const promptMessage = MessageFactory.text(messageText, InputHints.ExpectingInput);
         return await step.prompt(TEXT_PROMPT, {
             prompt: promptMessage
         });
@@ -78,15 +85,41 @@ class MainDialog extends ComponentDialog {
         // Call LUIS and gather user request.
         const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
 
+        //Mostra l'invetraio dell'armaiolo
         if (LuisRecognizer.topIntent(luisResult) === 'GetGunsmith') {
-            reply.text = "Sembra che tu abbia richiesto di vedere l'inventario dell'armaiolo.";
+            if (this.accessdata.access_token==null){
+                reply.text = "Non sei loggato, effettura l'accesso a questo link: " + this.br.loginlink();
+                await step.context.sendActivity(reply)
+                this.accessdata = await this.br.getAccessData();
+            }
+            const mod = await this.br.getGunsmith(this.accessdata,1,2);
+            
+            reply.text = mod.modOne +"\n"+mod.modTwo;
             await step.context.sendActivity(reply)
-        } 
-        if (LuisRecognizer.topIntent(luisResult) === "GetSpider"){
+        }
+        
+        //Mostra l'invetraio del ragno
+        if (LuisRecognizer.topIntent(luisResult) === "GetSpider") {
             reply.text = "Sembra che tu abbia richiesto di vedere l'inventario del ragno.";
             await step.context.sendActivity(reply)
-        } 
-        if (LuisRecognizer.topIntent(luisResult) === "None"){
+        }
+
+        //Mostra l'invetraio di Xur
+        if (LuisRecognizer.topIntent(luisResult) === "GetXur") {
+            if (this.accessdata.access_token==null){
+                reply.text = "Non sei loggato, effettura l'accesso a questo link: " + this.br.loginlink();
+                await step.context.sendActivity(reply)
+                this.accessdata = await this.br.getAccessData();
+            }
+
+            this.br.getXur(this.accessdata,1,2);
+
+            reply.text = "Sembra che tu abbia richiesto di vedere l'inventario di Xur.";
+            await step.context.sendActivity(reply)
+        }
+
+        //Richiesta non supportata
+        if (LuisRecognizer.topIntent(luisResult) === "None") {
             reply.text = "Mi dispiace ma non sono in grado di aiutarti.";
             await step.context.sendActivity(reply)
         }
@@ -97,6 +130,5 @@ class MainDialog extends ComponentDialog {
         return await step.replaceDialog(this.id);
     }
 }
-
 module.exports.MainDialog = MainDialog;
 module.exports.MAIN_DIALOG = MAIN_DIALOG;
