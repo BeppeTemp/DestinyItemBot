@@ -1,6 +1,8 @@
 //Importazione dei servizi Azure
 const { ActivityHandler } = require('botbuilder');
 
+const USER_PROFILE_PROPERTY = 'userProfile';
+
 class DestinyVendorBot extends ActivityHandler {
     constructor(conversationState, userState, dialog) {
         super();
@@ -8,6 +10,8 @@ class DestinyVendorBot extends ActivityHandler {
         if (!conversationState) throw new Error('[DialogBot]: Missing parameter. conversationState is required');
         if (!userState) throw new Error('[DialogBot]: Missing parameter. userState is required');
         if (!dialog) throw new Error('[DialogBot]: Missing parameter. dialog is required');
+
+        this.userProfileAccessor = userState.createProperty(USER_PROFILE_PROPERTY);
 
         this.conversationState = conversationState;
         this.userState = userState;
@@ -27,6 +31,10 @@ class DestinyVendorBot extends ActivityHandler {
         });
 
         this.onMessage(async (context, next) => {
+            const userProfile = await this.userProfileAccessor.get(context, {});
+
+            console.log(userProfile);
+
             await this.dialog.run(context, this.dialogState);
             // By calling next() you ensure that the next BotHandler is run.
             await next();
@@ -36,6 +44,7 @@ class DestinyVendorBot extends ActivityHandler {
     //Override the ActivityHandler.run() method to save state changes after the bot logic completes.
     async run(context) {
         await super.run(context);
+
         // Save any state changes. The load happened during the execution of the Dialog.
         await this.conversationState.saveChanges(context, false);
         await this.userState.saveChanges(context, false);
