@@ -197,6 +197,41 @@ class BungieRequester {
 
     //Ritorna i materiali in vendita dal ragno
     async getSpider(accessdata, membershipType, character) {
+        var membershipPlatformId = await this.getPlatformID(await accessdata.membership_id, membershipType);
+        var characterId = await this.getCharacterId(await membershipPlatformId, membershipType, character);
+
+        var itemHash = await axios.get(this.basePath + '/Destiny2/' + membershipType + '/Profile/' + membershipPlatformId + '/Character/' + characterId + '/Vendors/' + process.env.Spider + '/?components=402', {
+            headers: {
+                "X-API-Key": this.apiKey,
+                "Authorization": accessdata.token_type + " " + accessdata.access_token
+            }
+        })
+            .then(result => {
+                //te ne servono 7 
+                console.log(result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]].costs);
+            }).catch(error => {
+                console.log(error);
+            });
+
+        //bisogna formattare bene la cosa (come sono fatti gli item li trovi sul DB)
+    }
+
+    //Verifica se gli items sono posseduti dall'account
+    async checkItems(membershipPlatformId, membershipType, items) {
+        var checkList = await axios.get(this.basePath + '/Destiny2/' + membershipType + '/Profile/' + membershipPlatformId + '/?components=800', {
+            headers: {
+                "X-API-Key": this.apiKey,
+            }
+        })
+            .then(result => {
+                return result.data.Response.profileCollectibles.data.collectibles;
+            }).catch(error => {
+                console.log(error);
+            });
+
+        const check = [checkList[items[0].collectibleHash].state, checkList[items[1].collectibleHash].state];
+
+        return check;
     }
 
     //Ritorna gli item venduti da Xur
@@ -204,41 +239,118 @@ class BungieRequester {
         var membershipPlatformId = await this.getPlatformID(await accessdata.membership_id, membershipType);
         var characterId = await this.getCharacterId(await membershipPlatformId, membershipType, character);
 
-        var itemHash = await axios.get(this.basePath + '/Destiny2/' + membershipType + '/Profile/' + membershipPlatformId + '/Character/' + characterId + '/Vendors/' + process.env.xur + '/?components=402', {
+        var items = await axios.get(this.basePath + '/Destiny2/' + membershipType + '/Profile/' + membershipPlatformId + '/Character/' + characterId + '/Vendors/' + process.env.xur + '/?components=304,400,401,402', {
             headers: {
                 "X-API-Key": this.apiKey,
                 "Authorization": accessdata.token_type + " " + accessdata.access_token
             }
         })
             .then(result => {
-                var itemHash = {
+                let itemOneStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[1]].stats;
+                let itemTwoStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[2]].stats;
+                let itemThreeStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[3]].stats;
+
+                var itemsHash = {
+                    weapon: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[2]],
                     one: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]],
                     two: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[1]],
-                    three: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[2]],
-                    four: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[3]],
+                    three: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[3]],
                 }
-                return itemHash;
+
+                var itemsStats = {
+                    one: {
+                        mobilità: itemOneStats[Object.keys(itemOneStats)[4]].value,
+                        resilienza: itemOneStats[Object.keys(itemOneStats)[1]].value,
+                        recupero: itemOneStats[Object.keys(itemOneStats)[3]].value,
+                        disciplina: itemOneStats[Object.keys(itemOneStats)[2]].value,
+                        intelletto: itemOneStats[Object.keys(itemOneStats)[0]].value,
+                        forza: itemOneStats[Object.keys(itemOneStats)[5]].value,
+
+                        tot: function () {
+                            return this.mobilità + this.resilienza + this.recupero + this.disciplina + this.intelletto + this.forza;
+                        },
+
+                        toString: function () {
+                            return "Mobilità: " + this.mobilità + "\n" + "Resilienza: " + this.resilienza + "\n" + "Recupero: " + this.recupero + "\n" + "Disciplina: " + this.disciplina + "\n" + "Intelletto: " + this.intelletto + "\n" + "Forza: " + this.forza + "\n" + "Totale: " + this.tot() + "\n";
+                        }
+                    },
+                    two: {
+                        mobilità: itemTwoStats[Object.keys(itemOneStats)[4]].value,
+                        resilienza: itemTwoStats[Object.keys(itemOneStats)[1]].value,
+                        recupero: itemTwoStats[Object.keys(itemOneStats)[3]].value,
+                        disciplina: itemTwoStats[Object.keys(itemOneStats)[2]].value,
+                        intelletto: itemTwoStats[Object.keys(itemOneStats)[0]].value,
+                        forza: itemTwoStats[Object.keys(itemOneStats)[5]].value,
+
+                        tot: function () {
+                            return this.mobilità + this.resilienza + this.recupero + this.disciplina + this.intelletto + this.forza;
+                        },
+
+                        toString: function () {
+                            return "Mobilità: " + this.mobilità + "\n" + "Resilienza: " + this.resilienza + "\n" + "Recupero: " + this.recupero + "\n" + "Disciplina: " + this.disciplina + "\n" + "Intelletto: " + this.intelletto + "\n" + "Forza: " + this.forza + "\n" + "Totale: " + this.tot() + "\n";
+                        }
+                    },
+                    three: {
+                        mobilità: itemThreeStats[Object.keys(itemOneStats)[4]].value,
+                        resilienza: itemThreeStats[Object.keys(itemOneStats)[1]].value,
+                        recupero: itemThreeStats[Object.keys(itemOneStats)[3]].value,
+                        disciplina: itemThreeStats[Object.keys(itemOneStats)[2]].value,
+                        intelletto: itemThreeStats[Object.keys(itemOneStats)[0]].value,
+                        forza: itemThreeStats[Object.keys(itemOneStats)[5]].value,
+
+                        tot: function () {
+                            return this.mobilità + this.resilienza + this.recupero + this.disciplina + this.intelletto + this.forza;
+                        },
+
+                        toString: function () {
+                            return "Mobilità: " + this.mobilità + "\n" + "Resilienza: " + this.resilienza + "\n" + "Recupero: " + this.recupero + "\n" + "Disciplina: " + this.disciplina + "\n" + "Intelletto: " + this.intelletto + "\n" + "Forza: " + this.forza + "\n" + "Totale: " + this.tot() + "\n";
+                        }
+                    },
+                }
+
+                var items = {
+                    itemsHash: itemsHash,
+                    itemsStats: itemsStats
+                }
+
+                return items;
+
             }).catch(error => {
                 console.log(error);
             });
 
-        const querySpec = { query: "SELECT * from c WHERE c.id=\"" + itemHash.one.itemHash + "\" OR c.id=\"" + itemHash.two.itemHash + "\" OR c.id=\"" + itemHash.three.itemHash + "\" OR c.id=\"" + itemHash.four.itemHash + "\""};
+        const querySpec = { query: "SELECT * from c WHERE c.id=\"" + items.itemsHash.weapon.itemHash + "\" OR c.id=\"" + items.itemsHash.one.itemHash + "\" OR c.id=\"" + items.itemsHash.two.itemHash + "\" OR c.id=\"" + items.itemsHash.three.itemHash + "\"" };
 
         const DbSettings = {
             endpoint: process.env.EndPoint,
             key: process.env.Key
         }
-        
+
         const client = new CosmosClient(DbSettings);
         const database = client.database(process.env.DataBaseId);
         const container = database.container(process.env.ContainerId);
 
-        const { resources: items } = await container.items.query(querySpec).fetchAll();
+        const { resources: itemsDb } = await container.items.query(querySpec).fetchAll();
 
-        console.log(items[0].displayProperties.name);
-        console.log(items[1].displayProperties.name);
-        console.log(items[2].displayProperties.name);
-        console.log(items[3].displayProperties.name);
+        const weapon = itemsDb[2].displayProperties.name + " - " + itemsDb[2].itemTypeDisplayName + " (Già acquistata) \n \n";
+        const armorOne = itemsDb[0].displayProperties.name + " - " + itemsDb[0].itemTypeDisplayName + " (Già acquistata) \n \n" + items.itemsStats.one.toString();
+        const armorTwo = itemsDb[1].displayProperties.name + " - " + itemsDb[1].itemTypeDisplayName + " (Già acquistata) \n \n" + items.itemsStats.two.toString();
+        const armorThree = itemsDb[3].displayProperties.name + " - " + itemsDb[3].itemTypeDisplayName + " (Già acquistata) \n \n" + items.itemsStats.three.toString();
+
+
+
+        var result = {
+            weapon: weapon,
+            armorOne: armorOne,
+            armorTwo: armorTwo,
+            armorThree: armorThree,
+
+            toString: function () {
+                return this.weapon + "\n" + this.armorOne + "\n" + this.armorTwo + "\n" + this.armorThree;
+            }
+        }
+
+        console.log(result.toString());
 
         //bisogna formattare bene la cosa (come sono fatti gli item li trovi sul DB)
     }

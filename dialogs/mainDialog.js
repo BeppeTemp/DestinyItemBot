@@ -114,6 +114,9 @@ class MainDialog extends ComponentDialog {
         
         //Mostra l'invetraio del ragno
         if (LuisRecognizer.topIntent(luisResult) === "GetSpider") {
+
+            this.br.getSpider(this.userProfile.accessdata,1,2);
+
             reply.text = "Sembra che tu abbia richiesto di vedere l'inventario del ragno.";
             await step.context.sendActivity(reply)
         }
