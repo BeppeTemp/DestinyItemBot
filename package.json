@@ -1,8 +1,8 @@
 {
-    "name": "DestinyVendoBot",
+    "name": "DestinyVendorBot",
     "version": "1.0.0",
-    "description": "non lo so",
-    "author": "Generated using Microsoft Bot Builder Yeoman generator v4.10.3",
+    "description": "An Azure bon to support Destiny 2 players",
+    "author": "Giuseppe Arienzo & Simone Auriemma",
     "license": "MIT",
     "main": "index.js",
     "scripts": {
