@@ -20,6 +20,7 @@ class MainDialog extends ComponentDialog {
     constructor(luisRecognizer, userState) {
         super(MAIN_DIALOG);
 
+        //Verifica connessione con LUIS
         if (!luisRecognizer) throw new Error('[MainDialog]: Missing parameter \'luisRecognizer\' is required');
         this.luisRecognizer = luisRecognizer;
         this.userState = userState;
@@ -32,6 +33,7 @@ class MainDialog extends ComponentDialog {
             this.loopStep.bind(this)
         ]));
 
+        //Inizializzazione del BungieRequester
         this.br = new BungieRequester(process.env.BungieApiKey, process.env.BungieClientId, process.env.BungieCallBack);
 
         this.accessdata = {
@@ -67,8 +69,8 @@ class MainDialog extends ComponentDialog {
             return await step.next();
         }
 
-        var messageText = step.options.restartMsg ? step.options.restartMsg : 'Come posso aiutarti ?';
-        const promptMessage = MessageFactory.text(messageText, messageText, InputHints.ExpectingInput);
+        var messageText = 'Come posso aiutarti ?';
+        const promptMessage = MessageFactory.text(messageText, InputHints.ExpectingInput);
         return await step.prompt(TEXT_PROMPT, {
             prompt: promptMessage
         });

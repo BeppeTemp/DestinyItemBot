@@ -1,7 +1,7 @@
 //Importazione dei servizi Azure
 const { ActivityHandler } = require('botbuilder');
 
-class DetinyItemBot extends ActivityHandler {
+class DestinyVendorBot extends ActivityHandler {
     constructor(conversationState, userState, dialog) {
         super();
 
@@ -41,4 +41,4 @@ class DetinyItemBot extends ActivityHandler {
         await this.userState.saveChanges(context, false);
     }
 }
-module.exports.DetinyItemBot = DetinyItemBot;
+module.exports.DestinyVendorBot = DestinyVendorBot;

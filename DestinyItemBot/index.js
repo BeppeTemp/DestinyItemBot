@@ -7,7 +7,7 @@ const { BotFrameworkAdapter, ConversationState, MemoryStorage, UserState} = requ
 const ENV_FILE = path.join(__dirname, '.env');
 dotenv.config({ path: ENV_FILE });
 // This bot's main dialog.
-const { DetinyItemBot } = require('./bots/bot');
+const { DestinyVendorBot } = require('./bots/DestinyVendorBot');
 // Import main dialog
 const { MainDialog } = require('./dialogs/mainDialog');
 // Import LUIS
@@ -27,7 +27,7 @@ const adapter = new BotFrameworkAdapter({appId: process.env.MicrosoftAppId, appP
 
 // Create LUIS Recognizer
 // Update these values with the ones taken from Azure LUIS
-const {LuisAppId, LuisAPIKey, LuisAPIHostName } = process.env;
+const { LuisAppId, LuisAPIKey, LuisAPIHostName } = process.env;
 const luisConfig = { applicationId: LuisAppId, endpointKey: LuisAPIKey, endpoint: `https://${ LuisAPIHostName }` };
 const luisRecognizer = new DIBrecognizer(luisConfig);
 
@@ -38,7 +38,7 @@ const userState = new UserState(memoryStorage);
 
 // Create the bot and the main dialog
 const dialog = new MainDialog(luisRecognizer, userState);
-const bot = new DetinyItemBot(conversationState, userState, dialog);
+const bot = new DestinyVendorBot(conversationState, userState, dialog);
 
 // Listen for incoming requests.
 server.post('/api/messages', (req, res) => {
