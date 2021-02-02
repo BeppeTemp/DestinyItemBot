@@ -1,12 +1,8 @@
 //Importazione di vari moduli
 const { ActivityTypes, MessageFactory, InputHints, CardFactory } = require('botbuilder');
-const { ACData } = require('adaptivecards-templating');
 const { TextPrompt, ComponentDialog, DialogSet, DialogTurnStatus, WaterfallDialog } = require('botbuilder-dialogs');
 const { LuisRecognizer } = require('botbuilder-ai');
 const { BungieRequester } = require('../API/BungieRequester');
-
-//Importazione delle cards
-const GunsmithCard = require('../cards/gunsmithCard.json');
 
 //Importazione del .env
 const path = require('path');
@@ -128,25 +124,116 @@ class MainDialog extends ComponentDialog {
         if (LuisRecognizer.topIntent(luisResult) === 'GetGunsmith') {
             const mod = await this.br.getGunsmith(this.userProfile.accessdata,1,2);
 
-            var template = new ACData.template(GunsmithCard);
-
-            var card = template.expand({
-                $root : {
-                    "background": "../cards/resources/cardBackground.png",
-                    "modeOne": {
-                        "name": mod.modOne.name,
-                        "type": mod.modOne.type,
-                        "image": "https://www.bungie.net//common/destiny2_content/icons/da4d74b0d8ee25ca038d4053811573fc.jpg",
-                        "have": "(acquistata)"
+            var card = {
+                "type": "AdaptiveCard",
+                "body": [
+                    {
+                        "type": "ColumnSet",
+                        "columns": [
+                            {
+                                "type": "Column",
+                                "items": [
+                                    {
+                                        "type": "Image",
+                                        "url": mod.modOne.image,
+                                        "horizontalAlignment": "Center"
+                                    }
+                                ],
+                                "width": "auto"
+                            },
+                            {
+                                "type": "Column",
+                                "items": [
+                                    {
+                                        "type": "TextBlock",
+                                        "text": mod.modOne.name,
+                                        "wrap": true,
+                                        "spacing": "None",
+                                        "fontType": "Default",
+                                        "size": "Large",
+                                        "weight": "Bolder",
+                                        "color": "Light"
+                                    },
+                                    {
+                                        "type": "TextBlock",
+                                        "text": mod.modOne.type,
+                                        "wrap": true,
+                                        "color": "Light",
+                                        "spacing": "Small"
+                                    },
+                                    {
+                                        "type": "TextBlock",
+                                        "text": mod.modOne.have.text,
+                                        "wrap": true,
+                                        "spacing": "Medium",
+                                        "weight": "Bolder",
+                                        "color": mod.modOne.have.color,
+                                        "size": "Medium",
+                                        "fontType": "Default",
+                                        "isSubtle": true
+                                    }
+                                ],
+                                "width": "stretch"
+                            }
+                        ]
                     },
-                    "modeTwo": {
-                        "name": "seconda mod",
-                        "type": "descrizdddddddddione",
-                        "image": "https://www.bungie.net//common/destiny2_content/icons/da4d74b0d8ee25ca038d4053811573fc.jpg",
-                        "have": "(acqddddduistata)"
+                    {
+                        "type": "ColumnSet",
+                        "columns": [
+                            {
+                                "type": "Column",
+                                "items": [
+                                    {
+                                        "type": "Image",
+                                        "url": mod.modTwo.image,
+                                        "horizontalAlignment": "Center"
+                                    }
+                                ],
+                                "width": "auto"
+                            },
+                            {
+                                "type": "Column",
+                                "items": [
+                                    {
+                                        "type": "TextBlock",
+                                        "text": mod.modTwo.name,
+                                        "wrap": true,
+                                        "spacing": "None",
+                                        "fontType": "Default",
+                                        "size": "Large",
+                                        "weight": "Bolder",
+                                        "color": "Light"
+                                    },
+                                    {
+                                        "type": "TextBlock",
+                                        "text": mod.modTwo.type,
+                                        "wrap": true,
+                                        "color": "Light",
+                                        "spacing": "Small"
+                                    },
+                                    {
+                                        "type": "TextBlock",
+                                        "text": mod.modTwo.have.text,
+                                        "wrap": true,
+                                        "spacing": "Medium",
+                                        "weight": "Bolder",
+                                        "color": mod.modTwo.have.color,
+                                        "size": "Medium",
+                                        "fontType": "Default",
+                                        "isSubtle": true
+                                    }
+                                ],
+                                "width": "stretch"
+                            }
+                        ]
                     }
+                ],
+                "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                "version": "1.2",
+                "backgroundImage": {
+                    "url": "https://i.postimg.cc/9MkxjMf3/Immagine.png"
                 }
-            });
+            }
 
             await step.context.sendActivity({
                 text: 'Ecco le mod vendute oggi da Banshee-44:',

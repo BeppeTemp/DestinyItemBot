@@ -180,18 +180,24 @@ class BungieRequester {
                 name: items[0].displayProperties.name,
                 type: items[0].itemTypeDisplayName,
                 image: "https://www.bungie.net/" + items[0].displayProperties.icon,
-                have: "(Non acquistata)"
+                have : {
+                    text: "(Non acquistata)",
+                    color: "attention" 
+                }
             },
             modTwo: {
                 name: items[1].displayProperties.name,
                 type: items[1].itemTypeDisplayName,
-                iamge: "https://www.bungie.net/" + items[1].displayProperties.icon,
-                have: "(Non acquistata)"
+                image: "https://www.bungie.net/" + items[1].displayProperties.icon,
+                have : {
+                    text: "(Non acquistata)",
+                    color: "attention" 
+                }
             }
         }
 
-        if (check[0] == 64) { mod.modOne.have = "(Già acquistata)"; }
-        if (check[1] == 64) { mod.modTwo.have = "(Già acquistata)"; }
+        if (check[0] == 64) { mod.modOne.have.text = "(Già acquistata)"; mod.modOne.have.color = "good"}
+        if (check[1] == 64) { mod.modTwo.have.text = "(Già acquistata)"; mod.modeTwo.have.color = "good"}
 
         return mod;
     }

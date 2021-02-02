@@ -20,7 +20,7 @@
         "@azure/storage-queue": "^12.3.0",
         "adaptive-expressions": "^4.11.1",
         "adaptivecards": "^2.7.0",
-        "adaptivecards-templating": "^1.1.1",
+        "adaptivecards-templating": "^1.4.0",
         "axios": "^0.21.1",
         "axis": "^1.0.0",
         "botbuilder": "~4.10.3",
