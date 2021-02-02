@@ -1,8 +1,12 @@
 //Importazione di vari moduli
 const { ActivityTypes, MessageFactory, InputHints, CardFactory } = require('botbuilder');
+const { ACData } = require('adaptivecards-templating');
 const { TextPrompt, ComponentDialog, DialogSet, DialogTurnStatus, WaterfallDialog } = require('botbuilder-dialogs');
 const { LuisRecognizer } = require('botbuilder-ai');
 const { BungieRequester } = require('../API/BungieRequester');
+
+//Importazione delle cards
+const GunsmithCard = require('../cards/gunsmithCard.json');
 
 //Importazione del .env
 const path = require('path');
@@ -124,17 +128,30 @@ class MainDialog extends ComponentDialog {
         if (LuisRecognizer.topIntent(luisResult) === 'GetGunsmith') {
             const mod = await this.br.getGunsmith(this.userProfile.accessdata,1,2);
 
-            var card = CardFactory.thumbnailCard(
-                mod.modOne.name,
-                [{
-                    url: mod.modOne.image
-                }],
-                [], {
-                    subtitle: mod.modOne.type + " - " + mod.modOne.have,
+            var template = new ACData.template(GunsmithCard);
+
+            var card = template.expand({
+                $root : {
+                    "background": "../cards/resources/cardBackground.png",
+                    "modeOne": {
+                        "name": mod.modOne.name,
+                        "type": mod.modOne.type,
+                        "image": "https://www.bungie.net//common/destiny2_content/icons/da4d74b0d8ee25ca038d4053811573fc.jpg",
+                        "have": "(acquistata)"
+                    },
+                    "modeTwo": {
+                        "name": "seconda mod",
+                        "type": "descrizdddddddddione",
+                        "image": "https://www.bungie.net//common/destiny2_content/icons/da4d74b0d8ee25ca038d4053811573fc.jpg",
+                        "have": "(acqddddduistata)"
+                    }
                 }
-            );
-            reply.attachments = [card];
-            await step.context.sendActivity(reply);
+            });
+
+            await step.context.sendActivity({
+                text: 'Ecco le mod vendute oggi da Banshee-44:',
+                attachments: [CardFactory.adaptiveCard(card)]
+            });
         }
         
         //Mostra l'invetraio del ragno

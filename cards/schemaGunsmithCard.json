@@ -1,0 +1,15 @@
+{
+    "background": "https://www.bungie.net//common/destiny2_content/icons/da4d74b0d8ee25ca038d4053811573fc.jpg",
+    "modeOne": {
+        "name": "prima mod",
+        "type": "descrizione",
+        "image": "https://www.bungie.net//common/destiny2_content/icons/da4d74b0d8ee25ca038d4053811573fc.jpg",
+        "have": "(acquistata)"
+    },
+    "modeTwo": {
+        "name": "seconda mod",
+        "type": "descrizdddddddddione",
+        "image": "https://www.bungie.net//common/destiny2_content/icons/da4d74b0d8ee25ca038d4053811573fc.jpg",
+        "have": "(acqddddduistata)"
+    }
+}
