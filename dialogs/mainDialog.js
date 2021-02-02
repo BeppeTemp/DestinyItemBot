@@ -67,7 +67,24 @@ class MainDialog extends ComponentDialog {
         };
 
         if(!this.userProfile.accessdata){
-            reply.text = "Sembra che tu non sia loggato, clicca su link: " + this.br.loginlink();
+
+            var card = CardFactory.thumbnailCard(
+                'Login Richiesto o codice scaduto',
+                [{
+                    url: "https://image.flaticon.com/icons/png/512/152/152533.png"
+                }],
+                [{
+                    type: 'openUrl',
+                    title: 'Login',
+                    value : this.br.loginlink(),
+    
+                }],
+                {
+                    text :'Ciao, sono il Destiny Vendor Bot e per usufruire di tutte le mie bellissime e utilissime feature devi loggarti. Questo accade sia se è la prima volta che accedi oppure è passato un pò di tempo da quando hai acceduto l ultima volta. Per farlo basta cliccare il link sottostante, dove effettuerai l accesso tramite la tua piattaforma.  Grazie.',
+                }
+            );
+
+            reply.attachments = [card];
             await step.context.sendActivity(reply)
             this.userProfile.accessdata = await this.br.getAccessData();
             
@@ -107,7 +124,7 @@ class MainDialog extends ComponentDialog {
         if (LuisRecognizer.topIntent(luisResult) === 'GetGunsmith') {
             const mod = await this.br.getGunsmith(this.userProfile.accessdata,1,2);
 
-            var cardSite = CardFactory.thumbnailCard(
+            var card = CardFactory.thumbnailCard(
                 mod.modOne.name,
                 [{
                     url: mod.modOne.image
@@ -116,7 +133,7 @@ class MainDialog extends ComponentDialog {
                     subtitle: mod.modOne.type + " - " + mod.modOne.have,
                 }
             );
-            reply.attachments = [cardSite];
+            reply.attachments = [card];
             await step.context.sendActivity(reply);
         }
         
