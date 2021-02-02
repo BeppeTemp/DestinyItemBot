@@ -175,22 +175,23 @@ class BungieRequester {
 
         const check = await this.checkMod(membershipPlatformId, membershipType, items);
 
-        if (check[0] == 64) {
-            var modOneString = items[0].displayProperties.name + " - " + items[0].itemTypeDisplayName + " (Già acquistata)";
-        } else {
-            var modOneString = items[0].displayProperties.name + " - " + items[0].itemTypeDisplayName + " (Non acquistata)";
-        }
-
-        if (check[1] == 64) {
-            var modTwoString = items[1].displayProperties.name + " - " + items[1].itemTypeDisplayName + " (Già acquistata)";
-        } else {
-            var modTwoString = items[1].displayProperties.name + " - " + items[1].itemTypeDisplayName + " (Non acquistata)";
-        }
-
         const mod = {
-            modOne: modOneString,
-            modTwo: modTwoString
+            modOne: {
+                name: items[0].displayProperties.name,
+                type: items[0].itemTypeDisplayName,
+                image: "https://www.bungie.net/" + items[0].displayProperties.icon,
+                have: "(Non acquistata)"
+            },
+            modTwo: {
+                name: items[1].displayProperties.name,
+                type: items[1].itemTypeDisplayName,
+                iamge: "https://www.bungie.net/" + items[1].displayProperties.icon,
+                have: "(Non acquistata)"
+            }
         }
+
+        if (check[0] == 64) { mod.modOne.have = "(Già acquistata)"; }
+        if (check[1] == 64) { mod.modTwo.have = "(Già acquistata)"; }
 
         return mod;
     }
@@ -200,7 +201,7 @@ class BungieRequester {
         var membershipPlatformId = await this.getPlatformID(await accessdata.membership_id, membershipType);
         var characterId = await this.getCharacterId(await membershipPlatformId, membershipType, character);
 
-        var itemHash = await axios.get(this.basePath + '/Destiny2/' + membershipType + '/Profile/' + membershipPlatformId + '/Character/' + characterId + '/Vendors/' + process.env.Spider + '/?components=402', {
+        var spiderItems = await axios.get(this.basePath + '/Destiny2/' + membershipType + '/Profile/' + membershipPlatformId + '/Character/' + characterId + '/Vendors/' + process.env.Spider + '/?components=402', {
             headers: {
                 "X-API-Key": this.apiKey,
                 "Authorization": accessdata.token_type + " " + accessdata.access_token
@@ -208,30 +209,76 @@ class BungieRequester {
         })
             .then(result => {
                 //te ne servono 7 
-                console.log(result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]].costs);
+                const items = {
+                    one: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]].itemHash,
+                    two: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[1]].itemHash,
+                    three: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[2]].itemHash,
+                    four: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[3]].itemHash,
+                    five: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[4]].itemHash,
+                    six: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[5]].itemHash,
+                    seven: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[6]].itemHash,
+                }
+
+                const costs = {
+                    one: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]].costs,
+                    two: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[1]].costs,
+                    three: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[2]].costs,
+                    four: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[3]].costs,
+                    five: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[4]].costs,
+                    six: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[5]].costs,
+                    seven: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[6]].costs,
+                }
+
+                const spiderItems = {
+                    items: items,
+                    costs: costs,
+                }
+
+                return spiderItems;
             }).catch(error => {
                 console.log(error);
             });
 
-        //bisogna formattare bene la cosa (come sono fatti gli item li trovi sul DB)
-    }
+        const DbSettings = {
+            endpoint: process.env.EndPoint,
+            key: process.env.Key
+        }
 
-    //Verifica se gli items sono posseduti dall'account
-    async checkItems(membershipPlatformId, membershipType, items) {
-        var checkList = await axios.get(this.basePath + '/Destiny2/' + membershipType + '/Profile/' + membershipPlatformId + '/?components=800', {
-            headers: {
-                "X-API-Key": this.apiKey,
+        const client = new CosmosClient(DbSettings);
+        const database = client.database(process.env.DataBaseId);
+        const container = database.container(process.env.ContainerId);
+
+        const { resources: NameOne } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.items.one + "\"").fetchAll();
+        const { resources: NameTwo } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.items.two + "\"").fetchAll();
+        const { resources: NameThree } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.items.three + "\"").fetchAll();
+        const { resources: NameFour } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.items.four + "\"").fetchAll();
+        const { resources: NameFive } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.items.five + "\"").fetchAll();
+        const { resources: NameSix } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.items.six + "\"").fetchAll();
+        const { resources: NameSeven } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.items.seven + "\"").fetchAll();
+
+        const { resources: CostNameOne } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.costs.one[0].itemHash + "\"").fetchAll();
+        const { resources: CostNameTwo } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.costs.two[0].itemHash + "\"").fetchAll();
+        const { resources: CostNameThree } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.costs.three[0].itemHash + "\"").fetchAll();
+        const { resources: CostNameFour } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.costs.four[0].itemHash + "\"").fetchAll();
+        const { resources: CostNameFive } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.costs.five[0].itemHash + "\"").fetchAll();
+        const { resources: CostNameSix } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.costs.six[0].itemHash + "\"").fetchAll();
+        const { resources: CostNameSeven } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.costs.seven[0].itemHash + "\"").fetchAll();
+
+        const result = {
+            one: NameOne[0].displayProperties.name + " (" + CostNameOne[0].displayProperties.name + ": " + spiderItems.costs.one[0].quantity + ")",
+            two: NameTwo[0].displayProperties.name + " (" + CostNameTwo[0].displayProperties.name + ": " + spiderItems.costs.two[0].quantity + ")",
+            three: NameThree[0].displayProperties.name + " (" + CostNameThree[0].displayProperties.name + ": " + spiderItems.costs.three[0].quantity + ")",
+            four: NameFour[0].displayProperties.name + " (" + CostNameFour[0].displayProperties.name + ": " + spiderItems.costs.four[0].quantity + ")",
+            five: NameFive[0].displayProperties.name + " (" + CostNameFive[0].displayProperties.name + ": " + spiderItems.costs.five[0].quantity + ")",
+            six: NameSix[0].displayProperties.name + " (" + CostNameSix[0].displayProperties.name + ": " + spiderItems.costs.six[0].quantity + ")",
+            seven: NameSeven[0].displayProperties.name + " (" + CostNameSeven[0].displayProperties.name + ": " + spiderItems.costs.seven[0].quantity + ")",
+
+            toString: function () {
+                return this.one + "\n" + this.two + "\n" + this.three + "\n" + this.four + "\n" + this.five + "\n" + this.six + "\n" + this.seven;
             }
-        })
-            .then(result => {
-                return result.data.Response.profileCollectibles.data.collectibles;
-            }).catch(error => {
-                console.log(error);
-            });
+        }
 
-        const check = [checkList[items[0].collectibleHash].state, checkList[items[1].collectibleHash].state];
-
-        return check;
+        return result;
     }
 
     //Ritorna gli item venduti da Xur
@@ -332,12 +379,12 @@ class BungieRequester {
 
         const { resources: itemsDb } = await container.items.query(querySpec).fetchAll();
 
-        const weapon = itemsDb[2].displayProperties.name + " - " + itemsDb[2].itemTypeDisplayName + " (Già acquistata) \n \n";
-        const armorOne = itemsDb[0].displayProperties.name + " - " + itemsDb[0].itemTypeDisplayName + " (Già acquistata) \n \n" + items.itemsStats.one.toString();
-        const armorTwo = itemsDb[1].displayProperties.name + " - " + itemsDb[1].itemTypeDisplayName + " (Già acquistata) \n \n" + items.itemsStats.two.toString();
-        const armorThree = itemsDb[3].displayProperties.name + " - " + itemsDb[3].itemTypeDisplayName + " (Già acquistata) \n \n" + items.itemsStats.three.toString();
+        const collectibles = [itemsDb[0].collectibleHash, itemsDb[1].collectibleHash, itemsDb[2].collectibleHash, itemsDb[3].collectibleHash]
 
-
+        const weapon = itemsDb[2].displayProperties.name + " - " + itemsDb[2].itemTypeDisplayName + "\n \n";
+        const armorOne = itemsDb[0].displayProperties.name + " - " + itemsDb[0].itemTypeDisplayName + "\n \n" + items.itemsStats.one.toString();
+        const armorTwo = itemsDb[1].displayProperties.name + " - " + itemsDb[1].itemTypeDisplayName + "\n \n" + items.itemsStats.two.toString();
+        const armorThree = itemsDb[3].displayProperties.name + " - " + itemsDb[3].itemTypeDisplayName + "\n \n" + items.itemsStats.three.toString();
 
         var result = {
             weapon: weapon,
@@ -349,10 +396,7 @@ class BungieRequester {
                 return this.weapon + "\n" + this.armorOne + "\n" + this.armorTwo + "\n" + this.armorThree;
             }
         }
-
-        console.log(result.toString());
-
-        //bisogna formattare bene la cosa (come sono fatti gli item li trovi sul DB)
+        return result;
     }
 }
 module.exports.BungieRequester = BungieRequester;

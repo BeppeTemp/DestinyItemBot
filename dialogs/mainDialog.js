@@ -1,5 +1,5 @@
 //Importazione di vari moduli
-const { ActivityTypes, MessageFactory, InputHints } = require('botbuilder');
+const { ActivityTypes, MessageFactory, InputHints, CardFactory } = require('botbuilder');
 const { TextPrompt, ComponentDialog, DialogSet, DialogTurnStatus, WaterfallDialog } = require('botbuilder-dialogs');
 const { LuisRecognizer } = require('botbuilder-ai');
 const { BungieRequester } = require('../API/BungieRequester');
@@ -105,28 +105,30 @@ class MainDialog extends ComponentDialog {
 
         //Mostra l'invetraio dell'armaiolo
         if (LuisRecognizer.topIntent(luisResult) === 'GetGunsmith') {
-
             const mod = await this.br.getGunsmith(this.userProfile.accessdata,1,2);
-            
-            reply.text = mod.modOne +"\n"+mod.modTwo;
-            await step.context.sendActivity(reply)
+
+            var cardSite = CardFactory.thumbnailCard(
+                mod.modOne.name,
+                [{
+                    url: mod.modOne.image
+                }],
+                [], {
+                    subtitle: mod.modOne.type + " - " + mod.modOne.have,
+                }
+            );
+            reply.attachments = [cardSite];
+            await step.context.sendActivity(reply);
         }
         
         //Mostra l'invetraio del ragno
         if (LuisRecognizer.topIntent(luisResult) === "GetSpider") {
-
-            this.br.getSpider(this.userProfile.accessdata,1,2);
-
-            reply.text = "Sembra che tu abbia richiesto di vedere l'inventario del ragno.";
+            reply.text = (await this.br.getSpider(this.userProfile.accessdata,1,2)).toString();
             await step.context.sendActivity(reply)
         }
 
         //Mostra l'invetraio di Xur
         if (LuisRecognizer.topIntent(luisResult) === "GetXur") {
-
-            this.br.getXur(this.userProfile.accessdata,1,2);
-
-            reply.text = "Sembra che tu abbia richiesto di vedere l'inventario di Xur.";
+            reply.text = (await this.br.getXur(this.userProfile.accessdata,1,2)).toString();
             await step.context.sendActivity(reply)
         }
 
