@@ -30,11 +30,10 @@ class MainDialog extends ComponentDialog {
         // Adding used dialogs
         this.addDialog(new TextPrompt(TEXT_PROMPT))
             .addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
-            this.loginStep.bind(this),
-            this.welcomeStep.bind(this),
-            this.vendorStep.bind(this),
-            this.loopStep.bind(this)
-        ]));
+                this.welcomeStep.bind(this),
+                this.vendorStep.bind(this),
+                this.loopStep.bind(this)
+            ]));
 
         //Inizializzazione del BungieRequester
         this.br = new BungieRequester(process.env.BungieApiKey, process.env.BungieClientId, process.env.BungieCallBack);
@@ -58,42 +57,67 @@ class MainDialog extends ComponentDialog {
             await dialogContext.beginDialog(this.id);
         }
     }
-    //login step
-    async loginStep (step){
-        this.userProfile = await this.userProfileAccessor.get(step.context, {});
 
+    //login card di benvenuto
+    async loginStepWelcome(context) {
         const reply = {
             type: ActivityTypes.Message
         };
 
-        if(!this.userProfile.accessdata){
+        this.userProfile = await this.userProfileAccessor.get(context, {});
 
-            var card = CardFactory.thumbnailCard(
-                'Login Richiesto o codice scaduto',
-                [{
-                    url: "https://image.flaticon.com/icons/png/512/152/152533.png"
-                }],
-                [{
-                    type: 'openUrl',
-                    title: 'Login',
-                    value : this.br.loginlink(),
-    
-                }],
-                {
-                    text :'Ciao, sono il Destiny Vendor Bot e per usufruire di tutte le mie bellissime e utilissime feature devi loggarti. Questo accade sia se è la prima volta che accedi oppure è passato un pò di tempo da quando hai acceduto l ultima volta. Per farlo basta cliccare il link sottostante, dove effettuerai l accesso tramite la tua piattaforma.  Grazie.',
-                }
-            );
+        var card = CardFactory.thumbnailCard(
+            'Login richiesto o codice di accesso scaduto',
+            [],
+            [{
+                type: 'openUrl',
+                title: 'Login',
+                value: this.br.loginlink(),
 
-            reply.attachments = [card];
-            await step.context.sendActivity(reply)
-            this.userProfile.accessdata = await this.br.getAccessData();
-            
-        }else{
-            reply.text = "Salve guardiano non so ancora il tuo nome ma ci sto lavorado (sei loggato)";
-            await step.context.sendActivity(reply)
-        }
+            }],
+            {
+                text: '(Non inviare messaggi prima di aver completato la procedura di login)',
+            }
+        );
+        reply.attachments = [card];
+        await context.sendActivity(reply)
 
-        return await step.next();
+        this.userProfile.accessdata = await this.br.getAccessData();
+
+        const name = await this.br.getName(this.userProfile.accessdata.membership_id, 1);
+
+        await context.sendActivity("Codice di accesso ottenuto, salve " + name + ".")
+    }
+
+    //login card
+    async loginStep(step) {
+        const reply = {
+            type: ActivityTypes.Message
+        };
+
+        this.userProfile = await this.userProfileAccessor.get(step.context, {});
+
+        var card = CardFactory.thumbnailCard(
+            'Login richiesto o codice di accesso scaduto',
+            [],
+            [{
+                type: 'openUrl',
+                title: 'Login',
+                value: this.br.loginlink(),
+
+            }],
+            {
+                text: '(Non inviare messaggi prima di aver completato la procedura di login)',
+            }
+        );
+        reply.attachments = [card];
+        await step.context.sendActivity(reply)
+
+        this.userProfile.accessdata = await this.br.getAccessData();
+
+        const name = await this.br.getName(this.userProfile.accessdata.membership_id, 1);
+
+        await step.context.sendActivity("Codice di accesso ottenuto, salve " + name + ".")
     }
 
     // Welcome message, forward the text to next step
@@ -122,7 +146,134 @@ class MainDialog extends ComponentDialog {
 
         //Mostra l'invetraio dell'armaiolo
         if (LuisRecognizer.topIntent(luisResult) === 'GetGunsmith') {
-            const mod = await this.br.getGunsmith(this.userProfile.accessdata,1,2);
+            const mod = await this.br.getGunsmith(this.userProfile.accessdata, 1, 2);
+
+            if (mod.error == 0) {
+                var card = {
+                    "type": "AdaptiveCard",
+                    "body": [
+                        {
+                            "type": "ColumnSet",
+                            "columns": [
+                                {
+                                    "type": "Column",
+                                    "items": [
+                                        {
+                                            "type": "Image",
+                                            "url": mod.modOne.image,
+                                            "horizontalAlignment": "Center"
+                                        }
+                                    ],
+                                    "width": "auto"
+                                },
+                                {
+                                    "type": "Column",
+                                    "items": [
+                                        {
+                                            "type": "TextBlock",
+                                            "text": mod.modOne.name,
+                                            "wrap": true,
+                                            "spacing": "None",
+                                            "fontType": "Default",
+                                            "size": "Large",
+                                            "weight": "Bolder",
+                                            "color": "Light"
+                                        },
+                                        {
+                                            "type": "TextBlock",
+                                            "text": mod.modOne.type,
+                                            "wrap": true,
+                                            "color": "Light",
+                                            "spacing": "Small"
+                                        },
+                                        {
+                                            "type": "TextBlock",
+                                            "text": mod.modOne.have.text,
+                                            "wrap": true,
+                                            "spacing": "Medium",
+                                            "weight": "Bolder",
+                                            "color": mod.modOne.have.color,
+                                            "size": "Medium",
+                                            "fontType": "Default",
+                                            "isSubtle": true
+                                        }
+                                    ],
+                                    "width": "stretch"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "ColumnSet",
+                            "columns": [
+                                {
+                                    "type": "Column",
+                                    "items": [
+                                        {
+                                            "type": "Image",
+                                            "url": mod.modTwo.image,
+                                            "horizontalAlignment": "Center"
+                                        }
+                                    ],
+                                    "width": "auto"
+                                },
+                                {
+                                    "type": "Column",
+                                    "items": [
+                                        {
+                                            "type": "TextBlock",
+                                            "text": mod.modTwo.name,
+                                            "wrap": true,
+                                            "spacing": "None",
+                                            "fontType": "Default",
+                                            "size": "Large",
+                                            "weight": "Bolder",
+                                            "color": "Light"
+                                        },
+                                        {
+                                            "type": "TextBlock",
+                                            "text": mod.modTwo.type,
+                                            "wrap": true,
+                                            "color": "Light",
+                                            "spacing": "Small"
+                                        },
+                                        {
+                                            "type": "TextBlock",
+                                            "text": mod.modTwo.have.text,
+                                            "wrap": true,
+                                            "spacing": "Medium",
+                                            "weight": "Bolder",
+                                            "color": mod.modTwo.have.color,
+                                            "size": "Medium",
+                                            "fontType": "Default",
+                                            "isSubtle": true
+                                        }
+                                    ],
+                                    "width": "stretch"
+                                }
+                            ]
+                        }
+                    ],
+                    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                    "version": "1.2",
+                    "backgroundImage": {
+                        "url": "https://i.postimg.cc/9MkxjMf3/Immagine.png"
+                    }
+                }
+
+                await step.context.sendActivity({
+                    text: 'Ecco le mod vendute oggi da Banshee-44:',
+                    attachments: [CardFactory.adaptiveCard(card)]
+                });
+            } else {
+                await step.context.sendActivity("Codice di accesso scaduto.");
+                await this.loginStep(step);
+            }
+        }
+
+
+        //Mostra l'invetraio del ragno
+        if (LuisRecognizer.topIntent(luisResult) === "GetSpider") {
+            const item = await this.br.getSpider(this.userProfile.accessdata, 1, 2)
 
             var card = {
                 "type": "AdaptiveCard",
@@ -135,8 +286,7 @@ class MainDialog extends ComponentDialog {
                                 "items": [
                                     {
                                         "type": "Image",
-                                        "url": mod.modOne.image,
-                                        "horizontalAlignment": "Center"
+                                        "url": item.itemOne.item.icon
                                     }
                                 ],
                                 "width": "auto"
@@ -146,31 +296,48 @@ class MainDialog extends ComponentDialog {
                                 "items": [
                                     {
                                         "type": "TextBlock",
-                                        "text": mod.modOne.name,
+                                        "text": item.itemOne.item.name,
                                         "wrap": true,
-                                        "spacing": "None",
                                         "fontType": "Default",
                                         "size": "Large",
                                         "weight": "Bolder",
-                                        "color": "Light"
-                                    },
-                                    {
-                                        "type": "TextBlock",
-                                        "text": mod.modOne.type,
-                                        "wrap": true,
                                         "color": "Light",
-                                        "spacing": "Small"
+                                        "height": "stretch"
                                     },
                                     {
-                                        "type": "TextBlock",
-                                        "text": mod.modOne.have.text,
-                                        "wrap": true,
-                                        "spacing": "Medium",
-                                        "weight": "Bolder",
-                                        "color": mod.modOne.have.color,
-                                        "size": "Medium",
-                                        "fontType": "Default",
-                                        "isSubtle": true
+                                        "type": "ColumnSet",
+                                        "columns": [
+                                            {
+                                                "type": "Column",
+                                                "width": "stretch",
+                                                "items": [
+                                                    {
+                                                        "type": "TextBlock",
+                                                        "text": item.itemOne.cost.quantity + " " + item.itemOne.cost.name,
+                                                        "wrap": true,
+                                                        "weight": "Bolder",
+                                                        "color": "Light",
+                                                        "size": "Medium",
+                                                        "fontType": "Default",
+                                                        "isSubtle": true,
+                                                        "height": "stretch",
+                                                        "separator": true,
+                                                        "spacing": "None"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "Column",
+                                                "width": "auto",
+                                                "items": [
+                                                    {
+                                                        "type": "Image",
+                                                        "url": item.itemOne.cost.icon,
+                                                        "size": "small"
+                                                    }
+                                                ]
+                                            }
+                                        ]
                                     }
                                 ],
                                 "width": "stretch"
@@ -185,8 +352,7 @@ class MainDialog extends ComponentDialog {
                                 "items": [
                                     {
                                         "type": "Image",
-                                        "url": mod.modTwo.image,
-                                        "horizontalAlignment": "Center"
+                                        "url": item.itemTwo.item.icon
                                     }
                                 ],
                                 "width": "auto"
@@ -196,37 +362,384 @@ class MainDialog extends ComponentDialog {
                                 "items": [
                                     {
                                         "type": "TextBlock",
-                                        "text": mod.modTwo.name,
+                                        "text": item.itemTwo.item.name,
                                         "wrap": true,
-                                        "spacing": "None",
                                         "fontType": "Default",
                                         "size": "Large",
                                         "weight": "Bolder",
-                                        "color": "Light"
-                                    },
-                                    {
-                                        "type": "TextBlock",
-                                        "text": mod.modTwo.type,
-                                        "wrap": true,
                                         "color": "Light",
-                                        "spacing": "Small"
+                                        "height": "stretch"
                                     },
                                     {
-                                        "type": "TextBlock",
-                                        "text": mod.modTwo.have.text,
-                                        "wrap": true,
-                                        "spacing": "Medium",
-                                        "weight": "Bolder",
-                                        "color": mod.modTwo.have.color,
-                                        "size": "Medium",
-                                        "fontType": "Default",
-                                        "isSubtle": true
+                                        "type": "ColumnSet",
+                                        "columns": [
+                                            {
+                                                "type": "Column",
+                                                "width": "stretch",
+                                                "items": [
+                                                    {
+                                                        "type": "TextBlock",
+                                                        "text": item.itemTwo.cost.quantity + " " + item.itemTwo.cost.name,
+                                                        "wrap": true,
+                                                        "weight": "Bolder",
+                                                        "color": "Light",
+                                                        "size": "Medium",
+                                                        "fontType": "Default",
+                                                        "isSubtle": true,
+                                                        "height": "stretch",
+                                                        "separator": true,
+                                                        "spacing": "None"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "Column",
+                                                "width": "auto",
+                                                "items": [
+                                                    {
+                                                        "type": "Image",
+                                                        "url": item.itemTwo.cost.icon,
+                                                        "size": "Medium"
+                                                    }
+                                                ]
+                                            }
+                                        ]
                                     }
                                 ],
                                 "width": "stretch"
                             }
                         ]
-                    }
+                    },
+                    {
+                        "type": "ColumnSet",
+                        "columns": [
+                            {
+                                "type": "Column",
+                                "items": [
+                                    {
+                                        "type": "Image",
+                                        "url": item.itemThree.item.icon
+                                    }
+                                ],
+                                "width": "auto"
+                            },
+                            {
+                                "type": "Column",
+                                "items": [
+                                    {
+                                        "type": "TextBlock",
+                                        "text": item.itemThree.item.name,
+                                        "wrap": true,
+                                        "fontType": "Default",
+                                        "size": "Large",
+                                        "weight": "Bolder",
+                                        "color": "Light",
+                                        "height": "stretch"
+                                    },
+                                    {
+                                        "type": "ColumnSet",
+                                        "columns": [
+                                            {
+                                                "type": "Column",
+                                                "width": "stretch",
+                                                "items": [
+                                                    {
+                                                        "type": "TextBlock",
+                                                        "text": item.itemThree.cost.quantity + " " + item.itemThree.cost.name,
+                                                        "wrap": true,
+                                                        "weight": "Bolder",
+                                                        "color": "Light",
+                                                        "size": "Medium",
+                                                        "fontType": "Default",
+                                                        "isSubtle": true,
+                                                        "height": "stretch",
+                                                        "separator": true,
+                                                        "spacing": "None"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "Column",
+                                                "width": "auto",
+                                                "items": [
+                                                    {
+                                                        "type": "Image",
+                                                        "url": item.itemThree.cost.icon,
+                                                        "size": "Medium"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "width": "stretch"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "ColumnSet",
+                        "columns": [
+                            {
+                                "type": "Column",
+                                "items": [
+                                    {
+                                        "type": "Image",
+                                        "url": item.itemFour.item.icon
+                                    }
+                                ],
+                                "width": "auto"
+                            },
+                            {
+                                "type": "Column",
+                                "items": [
+                                    {
+                                        "type": "TextBlock",
+                                        "text": item.itemFour.item.name,
+                                        "wrap": true,
+                                        "fontType": "Default",
+                                        "size": "Large",
+                                        "weight": "Bolder",
+                                        "color": "Light",
+                                        "height": "stretch"
+                                    },
+                                    {
+                                        "type": "ColumnSet",
+                                        "columns": [
+                                            {
+                                                "type": "Column",
+                                                "width": "stretch",
+                                                "items": [
+                                                    {
+                                                        "type": "TextBlock",
+                                                        "text": item.itemFour.cost.quantity + " " + item.itemFour.cost.name,
+                                                        "wrap": true,
+                                                        "weight": "Bolder",
+                                                        "color": "Light",
+                                                        "size": "Medium",
+                                                        "fontType": "Default",
+                                                        "isSubtle": true,
+                                                        "height": "stretch",
+                                                        "separator": true,
+                                                        "spacing": "None"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "Column",
+                                                "width": "auto",
+                                                "items": [
+                                                    {
+                                                        "type": "Image",
+                                                        "url": item.itemFour.cost.icon,
+                                                        "size": "Medium"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "width": "stretch"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "ColumnSet",
+                        "columns": [
+                            {
+                                "type": "Column",
+                                "items": [
+                                    {
+                                        "type": "Image",
+                                        "url": item.itemFive.item.icon
+                                    }
+                                ],
+                                "width": "auto"
+                            },
+                            {
+                                "type": "Column",
+                                "items": [
+                                    {
+                                        "type": "TextBlock",
+                                        "text": item.itemFive.item.name,
+                                        "wrap": true,
+                                        "fontType": "Default",
+                                        "size": "Large",
+                                        "weight": "Bolder",
+                                        "color": "Light",
+                                        "height": "stretch"
+                                    },
+                                    {
+                                        "type": "ColumnSet",
+                                        "columns": [
+                                            {
+                                                "type": "Column",
+                                                "width": "stretch",
+                                                "items": [
+                                                    {
+                                                        "type": "TextBlock",
+                                                        "text": item.itemFive.cost.quantity + " " + item.itemFive.cost.name,
+                                                        "wrap": true,
+                                                        "weight": "Bolder",
+                                                        "color": "Light",
+                                                        "size": "Medium",
+                                                        "fontType": "Default",
+                                                        "isSubtle": true,
+                                                        "height": "stretch",
+                                                        "separator": true,
+                                                        "spacing": "None"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "Column",
+                                                "width": "auto",
+                                                "items": [
+                                                    {
+                                                        "type": "Image",
+                                                        "url": item.itemFive.cost.icon,
+                                                        "size": "Medium"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "width": "stretch"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "ColumnSet",
+                        "columns": [
+                            {
+                                "type": "Column",
+                                "items": [
+                                    {
+                                        "type": "Image",
+                                        "url": item.itemSix.item.icon
+                                    }
+                                ],
+                                "width": "auto"
+                            },
+                            {
+                                "type": "Column",
+                                "items": [
+                                    {
+                                        "type": "TextBlock",
+                                        "text": item.itemSix.item.name,
+                                        "wrap": true,
+                                        "fontType": "Default",
+                                        "size": "Large",
+                                        "weight": "Bolder",
+                                        "color": "Light",
+                                        "height": "stretch"
+                                    },
+                                    {
+                                        "type": "ColumnSet",
+                                        "columns": [
+                                            {
+                                                "type": "Column",
+                                                "width": "stretch",
+                                                "items": [
+                                                    {
+                                                        "type": "TextBlock",
+                                                        "text": item.itemSix.cost.quantity + " " + item.itemSix.cost.name,
+                                                        "wrap": true,
+                                                        "weight": "Bolder",
+                                                        "color": "Light",
+                                                        "size": "Medium",
+                                                        "fontType": "Default",
+                                                        "isSubtle": true,
+                                                        "height": "stretch",
+                                                        "separator": true,
+                                                        "spacing": "None"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "Column",
+                                                "width": "auto",
+                                                "items": [
+                                                    {
+                                                        "type": "Image",
+                                                        "url": item.itemSix.cost.icon,
+                                                        "size": "Medium"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "width": "stretch"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "ColumnSet",
+                        "columns": [
+                            {
+                                "type": "Column",
+                                "items": [
+                                    {
+                                        "type": "Image",
+                                        "url": item.itemSeven.item.icon
+                                    }
+                                ],
+                                "width": "auto"
+                            },
+                            {
+                                "type": "Column",
+                                "items": [
+                                    {
+                                        "type": "TextBlock",
+                                        "text": item.itemSeven.item.name,
+                                        "wrap": true,
+                                        "fontType": "Default",
+                                        "size": "Large",
+                                        "weight": "Bolder",
+                                        "color": "Light",
+                                        "height": "stretch"
+                                    },
+                                    {
+                                        "type": "ColumnSet",
+                                        "columns": [
+                                            {
+                                                "type": "Column",
+                                                "width": "stretch",
+                                                "items": [
+                                                    {
+                                                        "type": "TextBlock",
+                                                        "text": item.itemSeven.cost.quantity + " " + item.itemSeven.cost.name,
+                                                        "wrap": true,
+                                                        "weight": "Bolder",
+                                                        "color": "Light",
+                                                        "size": "Medium",
+                                                        "fontType": "Default",
+                                                        "isSubtle": true,
+                                                        "height": "stretch",
+                                                        "separator": true,
+                                                        "spacing": "None"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "Column",
+                                                "width": "auto",
+                                                "items": [
+                                                    {
+                                                        "type": "Image",
+                                                        "url": item.itemSeven.cost.icon,
+                                                        "size": "Medium"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "width": "stretch"
+                            }
+                        ]
+                    },
                 ],
                 "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
                 "version": "1.2",
@@ -236,20 +749,14 @@ class MainDialog extends ComponentDialog {
             }
 
             await step.context.sendActivity({
-                text: 'Ecco le mod vendute oggi da Banshee-44:',
+                text: 'Ecco i materiali venduti oggi dal Ragno:',
                 attachments: [CardFactory.adaptiveCard(card)]
             });
-        }
-        
-        //Mostra l'invetraio del ragno
-        if (LuisRecognizer.topIntent(luisResult) === "GetSpider") {
-            reply.text = (await this.br.getSpider(this.userProfile.accessdata,1,2)).toString();
-            await step.context.sendActivity(reply)
         }
 
         //Mostra l'invetraio di Xur
         if (LuisRecognizer.topIntent(luisResult) === "GetXur") {
-            reply.text = (await this.br.getXur(this.userProfile.accessdata,1,2)).toString();
+            reply.text = (await this.br.getXur(this.userProfile.accessdata, 1, 2)).toString();
             await step.context.sendActivity(reply)
         }
 
@@ -261,6 +768,7 @@ class MainDialog extends ComponentDialog {
         return await step.replaceDialog(this.id);
     }
 
+    //Fa un loop
     async loopStep(step) {
         return await step.replaceDialog(this.id);
     }

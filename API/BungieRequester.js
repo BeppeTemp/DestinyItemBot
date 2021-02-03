@@ -35,6 +35,22 @@ class BungieRequester {
         return this.baseLoginPath + responseType + "client_id=" + this.clientId + "&" + callBackUri + state;
     }
 
+    //Ottiene il nome utente del giocatore loggato
+    async getName(membershipId, membershipType) {
+        const name = await axios.get(this.basePath + '/User/GetMembershipsById/' + membershipId + '/' + membershipType + '/', {
+            headers: {
+                "X-API-Key": this.apiKey
+            }
+        })
+            .then(result => {
+                return result.data.Response.destinyMemberships[0].LastSeenDisplayName;
+            }).catch(error => {
+                console.log(error.data);
+            });
+
+        return name;
+    }
+
     //Verifica ad la presenza del OauthCode all'interno della storage queue
     async getOauthCode() {
         const queueServiceClient = QueueServiceClient.fromConnectionString(process.env.StorageAccountEndPoint);
@@ -68,6 +84,7 @@ class BungieRequester {
         await sleep(parseInt(process.env.TimeTwo) * 1000).then(() => { })
 
         var res = {
+            error: 0,
             access_token: null,
             token_type: null,
             expires_in: null,
@@ -152,53 +169,90 @@ class BungieRequester {
         })
             .then(result => {
                 var mods = {
+                    error : 0,
                     first: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[2]],
                     second: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[3]]
                 }
                 return mods;
             }).catch(error => {
-                console.log(error);
+                var mods = {
+                    error : 1,
+                    first: null,
+                    second: null
+                }
+                return mods;
             });
 
-        const querySpec = { query: "SELECT * from c WHERE c.id=\"" + mods.first.itemHash + "\" OR c.id=\"" + mods.second.itemHash + "\"" };
+        if (mods.error == 0) {
+            const querySpec = { query: "SELECT * from c WHERE c.id=\"" + mods.first.itemHash + "\" OR c.id=\"" + mods.second.itemHash + "\"" };
 
-        const DbSettings = {
-            endpoint: process.env.EndPoint,
-            key: process.env.Key
-        }
+            const DbSettings = {
+                endpoint: process.env.EndPoint,
+                key: process.env.Key
+            }
 
-        const client = new CosmosClient(DbSettings);
-        const database = client.database(process.env.DataBaseId);
-        const container = database.container(process.env.ContainerId);
+            const client = new CosmosClient(DbSettings);
+            const database = client.database(process.env.DataBaseId);
+            const container = database.container(process.env.ContainerId);
 
-        const { resources: items } = await container.items.query(querySpec).fetchAll();
+            const { resources: items } = await container.items.query(querySpec).fetchAll();
 
-        const check = await this.checkMod(membershipPlatformId, membershipType, items);
+            const check = await this.checkMod(membershipPlatformId, membershipType, items);
 
-        const mod = {
-            modOne: {
-                name: items[0].displayProperties.name,
-                type: items[0].itemTypeDisplayName,
-                image: "https://www.bungie.net/" + items[0].displayProperties.icon,
-                have : {
-                    text: "(Non acquistata)",
-                    color: "attention" 
+            var mod = {
+                error : 0,
+                modOne: {
+                    name: items[0].displayProperties.name,
+                    type: items[0].itemTypeDisplayName,
+                    image: "https://www.bungie.net/" + items[0].displayProperties.icon,
+                    have: {
+                        text: "(Non acquistata)",
+                        color: "attention"
+                    }
+                },
+                modTwo: {
+                    name: items[1].displayProperties.name,
+                    type: items[1].itemTypeDisplayName,
+                    image: "https://www.bungie.net/" + items[1].displayProperties.icon,
+                    have: {
+                        text: "(Non acquistata)",
+                        color: "attention"
+                    }
                 }
-            },
-            modTwo: {
-                name: items[1].displayProperties.name,
-                type: items[1].itemTypeDisplayName,
-                image: "https://www.bungie.net/" + items[1].displayProperties.icon,
-                have : {
-                    text: "(Non acquistata)",
-                    color: "attention" 
+            }
+
+            if (check[0] == 64) {
+                mod.modOne.have.text = "(Già acquistata)";
+                mod.modOne.have.color = "good";
+            }
+            if (check[1] == 64) {
+                mod.modTwo.have.text = "(Già acquistata)";
+                mod.modTwo.have.color = "good";
+            }
+
+        } else {
+            var mod = {
+                error : 1,
+                modOne: {
+                    name: null,
+                    type: null,
+                    image: null,
+                    have: {
+                        text: null,
+                        color: null
+                    }
+                },
+                modTwo: {
+                    name: null,
+                    type: null,
+                    image: null,
+                    have: {
+                        text: null,
+                        color: null
+                    }
                 }
             }
         }
-
-        if (check[0] == 64) { mod.modOne.have.text = "(Già acquistata)"; mod.modOne.have.color = "good"}
-        if (check[1] == 64) { mod.modTwo.have.text = "(Già acquistata)"; mod.modeTwo.have.color = "good"}
-
         return mod;
     }
 
@@ -215,25 +269,25 @@ class BungieRequester {
         })
             .then(result => {
                 //te ne servono 7 
-                const items = {
-                    one: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]].itemHash,
-                    two: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[1]].itemHash,
-                    three: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[2]].itemHash,
-                    four: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[3]].itemHash,
-                    five: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[4]].itemHash,
-                    six: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[5]].itemHash,
-                    seven: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[6]].itemHash,
-                }
+                const items = [
+                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]].itemHash,
+                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[1]].itemHash,
+                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[2]].itemHash,
+                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[3]].itemHash,
+                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[4]].itemHash,
+                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[5]].itemHash,
+                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[6]].itemHash,
+                ]
 
-                const costs = {
-                    one: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]].costs,
-                    two: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[1]].costs,
-                    three: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[2]].costs,
-                    four: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[3]].costs,
-                    five: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[4]].costs,
-                    six: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[5]].costs,
-                    seven: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[6]].costs,
-                }
+                const costs = [
+                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]].costs,
+                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[1]].costs,
+                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[2]].costs,
+                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[3]].costs,
+                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[4]].costs,
+                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[5]].costs,
+                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[6]].costs,
+                ]
 
                 const spiderItems = {
                     items: items,
@@ -254,37 +308,100 @@ class BungieRequester {
         const database = client.database(process.env.DataBaseId);
         const container = database.container(process.env.ContainerId);
 
-        const { resources: NameOne } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.items.one + "\"").fetchAll();
-        const { resources: NameTwo } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.items.two + "\"").fetchAll();
-        const { resources: NameThree } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.items.three + "\"").fetchAll();
-        const { resources: NameFour } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.items.four + "\"").fetchAll();
-        const { resources: NameFive } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.items.five + "\"").fetchAll();
-        const { resources: NameSix } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.items.six + "\"").fetchAll();
-        const { resources: NameSeven } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.items.seven + "\"").fetchAll();
+        const items = [];
+        const costs = [];
 
-        const { resources: CostNameOne } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.costs.one[0].itemHash + "\"").fetchAll();
-        const { resources: CostNameTwo } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.costs.two[0].itemHash + "\"").fetchAll();
-        const { resources: CostNameThree } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.costs.three[0].itemHash + "\"").fetchAll();
-        const { resources: CostNameFour } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.costs.four[0].itemHash + "\"").fetchAll();
-        const { resources: CostNameFive } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.costs.five[0].itemHash + "\"").fetchAll();
-        const { resources: CostNameSix } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.costs.six[0].itemHash + "\"").fetchAll();
-        const { resources: CostNameSeven } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.costs.seven[0].itemHash + "\"").fetchAll();
+        for (let i = 0; i < spiderItems.items.length; i++) {
+            const { resources: item } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.items[i] + "\"").fetchAll();
+            items[i] = item[0];
+        }
 
-        const result = {
-            one: NameOne[0].displayProperties.name + " (" + CostNameOne[0].displayProperties.name + ": " + spiderItems.costs.one[0].quantity + ")",
-            two: NameTwo[0].displayProperties.name + " (" + CostNameTwo[0].displayProperties.name + ": " + spiderItems.costs.two[0].quantity + ")",
-            three: NameThree[0].displayProperties.name + " (" + CostNameThree[0].displayProperties.name + ": " + spiderItems.costs.three[0].quantity + ")",
-            four: NameFour[0].displayProperties.name + " (" + CostNameFour[0].displayProperties.name + ": " + spiderItems.costs.four[0].quantity + ")",
-            five: NameFive[0].displayProperties.name + " (" + CostNameFive[0].displayProperties.name + ": " + spiderItems.costs.five[0].quantity + ")",
-            six: NameSix[0].displayProperties.name + " (" + CostNameSix[0].displayProperties.name + ": " + spiderItems.costs.six[0].quantity + ")",
-            seven: NameSeven[0].displayProperties.name + " (" + CostNameSeven[0].displayProperties.name + ": " + spiderItems.costs.seven[0].quantity + ")",
+        for (let i = 0; i < spiderItems.costs.length; i++) {
+            const { resources: cost } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.costs[i][0].itemHash + "\"").fetchAll();
+            costs[i] = cost[0];
+        }
 
-            toString: function () {
-                return this.one + "\n" + this.two + "\n" + this.three + "\n" + this.four + "\n" + this.five + "\n" + this.six + "\n" + this.seven;
+        const itemsSold = {
+            itemOne: {
+                item: {
+                    name: (items[0].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[0].displayProperties.name.slice(10),
+                    icon: "https://www.bungie.net/" + items[0].displayProperties.icon,
+                },
+                cost: {
+                    name: costs[0].displayProperties.name,
+                    icon: "https://www.bungie.net/" + costs[0].displayProperties.icon,
+                    quantity: spiderItems.costs[0][0].quantity
+                }
+            },
+            itemTwo: {
+                item: {
+                    name: (items[1].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[1].displayProperties.name.slice(10),
+                    icon: "https://www.bungie.net/" + items[1].displayProperties.icon,
+                },
+                cost: {
+                    name: costs[1].displayProperties.name,
+                    icon: "https://www.bungie.net/" + costs[1].displayProperties.icon,
+                    quantity: spiderItems.costs[1][0].quantity
+                }
+            },
+            itemThree: {
+                item: {
+                    name: (items[2].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[2].displayProperties.name.slice(10),
+                    icon: "https://www.bungie.net/" + items[2].displayProperties.icon,
+                },
+                cost: {
+                    name: costs[2].displayProperties.name,
+                    icon: "https://www.bungie.net/" + costs[2].displayProperties.icon,
+                    quantity: spiderItems.costs[2][0].quantity
+                }
+            },
+            itemFour: {
+                item: {
+                    name: (items[3].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[3].displayProperties.name.slice(10),
+                    icon: "https://www.bungie.net/" + items[3].displayProperties.icon,
+                },
+                cost: {
+                    name: costs[3].displayProperties.name,
+                    icon: "https://www.bungie.net/" + costs[3].displayProperties.icon,
+                    quantity: spiderItems.costs[3][0].quantity
+                }
+            },
+            itemFive: {
+                item: {
+                    name: (items[4].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[4].displayProperties.name.slice(10),
+                    icon: "https://www.bungie.net/" + items[4].displayProperties.icon,
+                },
+                cost: {
+                    name: costs[4].displayProperties.name,
+                    icon: "https://www.bungie.net/" + costs[4].displayProperties.icon,
+                    quantity: spiderItems.costs[4][0].quantity
+                }
+            },
+            itemSix: {
+                item: {
+                    name: (items[5].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[5].displayProperties.name.slice(10),
+                    icon: "https://www.bungie.net/" + items[5].displayProperties.icon,
+                },
+                cost: {
+                    name: costs[5].displayProperties.name,
+                    icon: "https://www.bungie.net/" + costs[5].displayProperties.icon,
+                    quantity: spiderItems.costs[5][0].quantity
+                }
+            },
+            itemSeven: {
+                item: {
+                    name: (items[6].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[6].displayProperties.name.slice(10),
+                    icon: "https://www.bungie.net/" + items[6].displayProperties.icon,
+                },
+                cost: {
+                    name: costs[6].displayProperties.name,
+                    icon: "https://www.bungie.net/" + costs[6].displayProperties.icon,
+                    quantity: spiderItems.costs[6][0].quantity
+                }
             }
         }
 
-        return result;
+        return itemsSold;
     }
 
     //Ritorna gli item venduti da Xur
@@ -299,6 +416,7 @@ class BungieRequester {
             }
         })
             .then(result => {
+                /*
                 let itemOneStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[1]].stats;
                 let itemTwoStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[2]].stats;
                 let itemThreeStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[3]].stats;
@@ -366,13 +484,15 @@ class BungieRequester {
                     itemsStats: itemsStats
                 }
 
-                return items;
+                return items;*/
+
+                console.log(result.data.Response.sales);
 
             }).catch(error => {
                 console.log(error);
             });
 
-        const querySpec = { query: "SELECT * from c WHERE c.id=\"" + items.itemsHash.weapon.itemHash + "\" OR c.id=\"" + items.itemsHash.one.itemHash + "\" OR c.id=\"" + items.itemsHash.two.itemHash + "\" OR c.id=\"" + items.itemsHash.three.itemHash + "\"" };
+        /*const querySpec = { query: "SELECT * from c WHERE c.id=\"" + items.itemsHash.weapon.itemHash + "\" OR c.id=\"" + items.itemsHash.one.itemHash + "\" OR c.id=\"" + items.itemsHash.two.itemHash + "\" OR c.id=\"" + items.itemsHash.three.itemHash + "\"" };
 
         const DbSettings = {
             endpoint: process.env.EndPoint,
@@ -402,7 +522,7 @@ class BungieRequester {
                 return this.weapon + "\n" + this.armorOne + "\n" + this.armorTwo + "\n" + this.armorThree;
             }
         }
-        return result;
+        return result;*/
     }
 }
 module.exports.BungieRequester = BungieRequester;
