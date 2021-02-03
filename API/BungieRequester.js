@@ -169,14 +169,15 @@ class BungieRequester {
         })
             .then(result => {
                 var mods = {
-                    error : 0,
+                    error: 0,
                     first: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[2]],
                     second: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[3]]
                 }
                 return mods;
             }).catch(error => {
+                console.log(error);
                 var mods = {
-                    error : 1,
+                    error: 1,
                     first: null,
                     second: null
                 }
@@ -200,7 +201,7 @@ class BungieRequester {
             const check = await this.checkMod(membershipPlatformId, membershipType, items);
 
             var mod = {
-                error : 0,
+                error: 0,
                 modOne: {
                     name: items[0].displayProperties.name,
                     type: items[0].itemTypeDisplayName,
@@ -232,7 +233,7 @@ class BungieRequester {
 
         } else {
             var mod = {
-                error : 1,
+                error: 1,
                 modOne: {
                     name: null,
                     type: null,
@@ -268,7 +269,6 @@ class BungieRequester {
             }
         })
             .then(result => {
-                //te ne servono 7 
                 const items = [
                     result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]].itemHash,
                     result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[1]].itemHash,
@@ -290,6 +290,7 @@ class BungieRequester {
                 ]
 
                 const spiderItems = {
+                    error: 0,
                     items: items,
                     costs: costs,
                 }
@@ -297,111 +298,125 @@ class BungieRequester {
                 return spiderItems;
             }).catch(error => {
                 console.log(error);
+                const spiderItems = {
+                    error: 1,
+                    items: null,
+                    costs: null,
+                }
+                return spiderItems;
             });
 
-        const DbSettings = {
-            endpoint: process.env.EndPoint,
-            key: process.env.Key
-        }
+        if (spiderItems.error == 0) {
 
-        const client = new CosmosClient(DbSettings);
-        const database = client.database(process.env.DataBaseId);
-        const container = database.container(process.env.ContainerId);
+            const DbSettings = {
+                endpoint: process.env.EndPoint,
+                key: process.env.Key
+            }
 
-        const items = [];
-        const costs = [];
+            const client = new CosmosClient(DbSettings);
+            const database = client.database(process.env.DataBaseId);
+            const container = database.container(process.env.ContainerId);
 
-        for (let i = 0; i < spiderItems.items.length; i++) {
-            const { resources: item } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.items[i] + "\"").fetchAll();
-            items[i] = item[0];
-        }
+            const items = [];
+            const costs = [];
 
-        for (let i = 0; i < spiderItems.costs.length; i++) {
-            const { resources: cost } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.costs[i][0].itemHash + "\"").fetchAll();
-            costs[i] = cost[0];
-        }
+            for (let i = 0; i < spiderItems.items.length; i++) {
+                const { resources: item } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.items[i] + "\"").fetchAll();
+                items[i] = item[0];
+            }
 
-        const itemsSold = {
-            itemOne: {
-                item: {
-                    name: (items[0].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[0].displayProperties.name.slice(10),
-                    icon: "https://www.bungie.net/" + items[0].displayProperties.icon,
+            for (let i = 0; i < spiderItems.costs.length; i++) {
+                const { resources: cost } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.costs[i][0].itemHash + "\"").fetchAll();
+                costs[i] = cost[0];
+            }
+
+            const itemsSold = {
+                error : 0,
+                itemOne: {
+                    item: {
+                        name: (items[0].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[0].displayProperties.name.slice(10),
+                        icon: "https://www.bungie.net/" + items[0].displayProperties.icon,
+                    },
+                    cost: {
+                        name: costs[0].displayProperties.name,
+                        icon: "https://www.bungie.net/" + costs[0].displayProperties.icon,
+                        quantity: spiderItems.costs[0][0].quantity
+                    }
                 },
-                cost: {
-                    name: costs[0].displayProperties.name,
-                    icon: "https://www.bungie.net/" + costs[0].displayProperties.icon,
-                    quantity: spiderItems.costs[0][0].quantity
-                }
-            },
-            itemTwo: {
-                item: {
-                    name: (items[1].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[1].displayProperties.name.slice(10),
-                    icon: "https://www.bungie.net/" + items[1].displayProperties.icon,
+                itemTwo: {
+                    item: {
+                        name: (items[1].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[1].displayProperties.name.slice(10),
+                        icon: "https://www.bungie.net/" + items[1].displayProperties.icon,
+                    },
+                    cost: {
+                        name: costs[1].displayProperties.name,
+                        icon: "https://www.bungie.net/" + costs[1].displayProperties.icon,
+                        quantity: spiderItems.costs[1][0].quantity
+                    }
                 },
-                cost: {
-                    name: costs[1].displayProperties.name,
-                    icon: "https://www.bungie.net/" + costs[1].displayProperties.icon,
-                    quantity: spiderItems.costs[1][0].quantity
-                }
-            },
-            itemThree: {
-                item: {
-                    name: (items[2].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[2].displayProperties.name.slice(10),
-                    icon: "https://www.bungie.net/" + items[2].displayProperties.icon,
+                itemThree: {
+                    item: {
+                        name: (items[2].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[2].displayProperties.name.slice(10),
+                        icon: "https://www.bungie.net/" + items[2].displayProperties.icon,
+                    },
+                    cost: {
+                        name: costs[2].displayProperties.name,
+                        icon: "https://www.bungie.net/" + costs[2].displayProperties.icon,
+                        quantity: spiderItems.costs[2][0].quantity
+                    }
                 },
-                cost: {
-                    name: costs[2].displayProperties.name,
-                    icon: "https://www.bungie.net/" + costs[2].displayProperties.icon,
-                    quantity: spiderItems.costs[2][0].quantity
-                }
-            },
-            itemFour: {
-                item: {
-                    name: (items[3].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[3].displayProperties.name.slice(10),
-                    icon: "https://www.bungie.net/" + items[3].displayProperties.icon,
+                itemFour: {
+                    item: {
+                        name: (items[3].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[3].displayProperties.name.slice(10),
+                        icon: "https://www.bungie.net/" + items[3].displayProperties.icon,
+                    },
+                    cost: {
+                        name: costs[3].displayProperties.name,
+                        icon: "https://www.bungie.net/" + costs[3].displayProperties.icon,
+                        quantity: spiderItems.costs[3][0].quantity
+                    }
                 },
-                cost: {
-                    name: costs[3].displayProperties.name,
-                    icon: "https://www.bungie.net/" + costs[3].displayProperties.icon,
-                    quantity: spiderItems.costs[3][0].quantity
-                }
-            },
-            itemFive: {
-                item: {
-                    name: (items[4].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[4].displayProperties.name.slice(10),
-                    icon: "https://www.bungie.net/" + items[4].displayProperties.icon,
+                itemFive: {
+                    item: {
+                        name: (items[4].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[4].displayProperties.name.slice(10),
+                        icon: "https://www.bungie.net/" + items[4].displayProperties.icon,
+                    },
+                    cost: {
+                        name: costs[4].displayProperties.name,
+                        icon: "https://www.bungie.net/" + costs[4].displayProperties.icon,
+                        quantity: spiderItems.costs[4][0].quantity
+                    }
                 },
-                cost: {
-                    name: costs[4].displayProperties.name,
-                    icon: "https://www.bungie.net/" + costs[4].displayProperties.icon,
-                    quantity: spiderItems.costs[4][0].quantity
-                }
-            },
-            itemSix: {
-                item: {
-                    name: (items[5].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[5].displayProperties.name.slice(10),
-                    icon: "https://www.bungie.net/" + items[5].displayProperties.icon,
+                itemSix: {
+                    item: {
+                        name: (items[5].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[5].displayProperties.name.slice(10),
+                        icon: "https://www.bungie.net/" + items[5].displayProperties.icon,
+                    },
+                    cost: {
+                        name: costs[5].displayProperties.name,
+                        icon: "https://www.bungie.net/" + costs[5].displayProperties.icon,
+                        quantity: spiderItems.costs[5][0].quantity
+                    }
                 },
-                cost: {
-                    name: costs[5].displayProperties.name,
-                    icon: "https://www.bungie.net/" + costs[5].displayProperties.icon,
-                    quantity: spiderItems.costs[5][0].quantity
-                }
-            },
-            itemSeven: {
-                item: {
-                    name: (items[6].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[6].displayProperties.name.slice(10),
-                    icon: "https://www.bungie.net/" + items[6].displayProperties.icon,
-                },
-                cost: {
-                    name: costs[6].displayProperties.name,
-                    icon: "https://www.bungie.net/" + costs[6].displayProperties.icon,
-                    quantity: spiderItems.costs[6][0].quantity
+                itemSeven: {
+                    item: {
+                        name: (items[6].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[6].displayProperties.name.slice(10),
+                        icon: "https://www.bungie.net/" + items[6].displayProperties.icon,
+                    },
+                    cost: {
+                        name: costs[6].displayProperties.name,
+                        icon: "https://www.bungie.net/" + costs[6].displayProperties.icon,
+                        quantity: spiderItems.costs[6][0].quantity
+                    }
                 }
             }
+            return itemsSold;
+        } else {
+            const itemsSold = {
+                error: 1
+            }
+            return itemsSold;
         }
-
-        return itemsSold;
     }
 
     //Ritorna gli item venduti da Xur
