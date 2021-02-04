@@ -79,6 +79,7 @@ class MainDialog extends ComponentDialog {
                 text: '(Non inviare messaggi prima di aver completato la procedura di login)',
             }
         );
+        
         reply.attachments = [card];
         await step.context.sendActivity(reply)
 
@@ -86,7 +87,7 @@ class MainDialog extends ComponentDialog {
 
         await this.userProfileAccessor.set(step.context, accessdata);
 
-        const name = await this.br.getName(accessdata.membership_id, 1);
+        const name = await this.br.getName(accessdata.membership_id, process.env.MemberShipType);
 
         await step.context.sendActivity("Codice di accesso ottenuto, salve " + name + ".")
     }
@@ -146,7 +147,7 @@ class MainDialog extends ComponentDialog {
 
         //Mostra l'invetraio dell'armaiolo
         if (LuisRecognizer.topIntent(luisResult) === 'GetGunsmith') {
-            const mod = await this.br.getGunsmith(accessdata, 1, 2);
+            const mod = await this.br.getGunsmith(accessdata, process.env.MemberShipType, process.env.Character);
 
             if (mod.error == 0) {
 
@@ -274,7 +275,7 @@ class MainDialog extends ComponentDialog {
 
         //Mostra l'invetraio del ragno
         if (LuisRecognizer.topIntent(luisResult) === "GetSpider") {
-            const item = await this.br.getSpider(accessdata, 1, 2)
+            const item = await this.br.getSpider(accessdata, process.env.MemberShipType, process.env.Character)
 
             if (item.error == 0) {
 
@@ -763,13 +764,13 @@ class MainDialog extends ComponentDialog {
 
         //Mostra l'invetraio di Xur
         if (LuisRecognizer.topIntent(luisResult) === "GetXur") {
-            const item = await this.br.getXur(accessdata, 1, 2);
+            const item = await this.br.getXur(accessdata, process.env.MemberShipType, process.env.Character);
 
             if ((item.error == 0) && (item.canPurchase == true)) {
                 await step.context.sendActivity("Qui ci va la stampa.");
             }
             if (item.canPurchase == false) {
-                await step.context.sendActivity("Xur oggi non c'è. Riprova il nel week-end.");
+                await step.context.sendActivity("Xur oggi non c'è. Riprova nel week-end.");
             }
             if (item.error == 1) {
                 await step.context.sendActivity("Codice di accesso scaduto.");

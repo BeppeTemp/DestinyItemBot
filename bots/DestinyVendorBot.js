@@ -14,7 +14,7 @@ class DestinyVendorBot extends ActivityHandler {
         this.dialog = dialog;
         this.dialogState = this.conversationState.createProperty('DialogState');
 
-        this.onMembersAdded(async (context, next) => {
+        this.onMembersAdded(async (next) => {
             // By calling next() you ensure that the next BotHandler is run.
             await next();
         });
