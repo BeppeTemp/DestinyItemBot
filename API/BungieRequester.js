@@ -331,7 +331,7 @@ class BungieRequester {
             }
 
             const itemsSold = {
-                error : 0,
+                error: 0,
                 itemOne: {
                     item: {
                         name: (items[0].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[0].displayProperties.name.slice(10),
@@ -431,113 +431,152 @@ class BungieRequester {
             }
         })
             .then(result => {
-                /*
-                let itemOneStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[1]].stats;
-                let itemTwoStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[2]].stats;
-                let itemThreeStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[3]].stats;
+                
+                if (result.data.Response.vendor.data.canPurchase) {
 
-                var itemsHash = {
-                    weapon: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[2]],
-                    one: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]],
-                    two: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[1]],
-                    three: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[3]],
-                }
+                    let itemOneStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[1]].stats;
+                    let itemTwoStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[2]].stats;
+                    let itemThreeStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[3]].stats;
 
-                var itemsStats = {
-                    one: {
-                        mobilità: itemOneStats[Object.keys(itemOneStats)[4]].value,
-                        resilienza: itemOneStats[Object.keys(itemOneStats)[1]].value,
-                        recupero: itemOneStats[Object.keys(itemOneStats)[3]].value,
-                        disciplina: itemOneStats[Object.keys(itemOneStats)[2]].value,
-                        intelletto: itemOneStats[Object.keys(itemOneStats)[0]].value,
-                        forza: itemOneStats[Object.keys(itemOneStats)[5]].value,
+                    var itemsHash = {
+                        weapon: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[2]],
+                        one: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]],
+                        two: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[1]],
+                        three: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[3]],
+                    }
 
-                        tot: function () {
-                            return this.mobilità + this.resilienza + this.recupero + this.disciplina + this.intelletto + this.forza;
+                    var itemsStats = {
+                        one: {
+                            mobilità: itemOneStats[Object.keys(itemOneStats)[4]].value,
+                            resilienza: itemOneStats[Object.keys(itemOneStats)[1]].value,
+                            recupero: itemOneStats[Object.keys(itemOneStats)[3]].value,
+                            disciplina: itemOneStats[Object.keys(itemOneStats)[2]].value,
+                            intelletto: itemOneStats[Object.keys(itemOneStats)[0]].value,
+                            forza: itemOneStats[Object.keys(itemOneStats)[5]].value,
+
+                            tot: function () {
+                                return this.mobilità + this.resilienza + this.recupero + this.disciplina + this.intelletto + this.forza;
+                            },
+
+                            toString: function () {
+                                return "Mobilità: " + this.mobilità + "\n" + "Resilienza: " + this.resilienza + "\n" + "Recupero: " + this.recupero + "\n" + "Disciplina: " + this.disciplina + "\n" + "Intelletto: " + this.intelletto + "\n" + "Forza: " + this.forza + "\n" + "Totale: " + this.tot() + "\n";
+                            }
                         },
+                        two: {
+                            mobilità: itemTwoStats[Object.keys(itemOneStats)[4]].value,
+                            resilienza: itemTwoStats[Object.keys(itemOneStats)[1]].value,
+                            recupero: itemTwoStats[Object.keys(itemOneStats)[3]].value,
+                            disciplina: itemTwoStats[Object.keys(itemOneStats)[2]].value,
+                            intelletto: itemTwoStats[Object.keys(itemOneStats)[0]].value,
+                            forza: itemTwoStats[Object.keys(itemOneStats)[5]].value,
 
-                        toString: function () {
-                            return "Mobilità: " + this.mobilità + "\n" + "Resilienza: " + this.resilienza + "\n" + "Recupero: " + this.recupero + "\n" + "Disciplina: " + this.disciplina + "\n" + "Intelletto: " + this.intelletto + "\n" + "Forza: " + this.forza + "\n" + "Totale: " + this.tot() + "\n";
-                        }
-                    },
-                    two: {
-                        mobilità: itemTwoStats[Object.keys(itemOneStats)[4]].value,
-                        resilienza: itemTwoStats[Object.keys(itemOneStats)[1]].value,
-                        recupero: itemTwoStats[Object.keys(itemOneStats)[3]].value,
-                        disciplina: itemTwoStats[Object.keys(itemOneStats)[2]].value,
-                        intelletto: itemTwoStats[Object.keys(itemOneStats)[0]].value,
-                        forza: itemTwoStats[Object.keys(itemOneStats)[5]].value,
+                            tot: function () {
+                                return this.mobilità + this.resilienza + this.recupero + this.disciplina + this.intelletto + this.forza;
+                            },
 
-                        tot: function () {
-                            return this.mobilità + this.resilienza + this.recupero + this.disciplina + this.intelletto + this.forza;
+                            toString: function () {
+                                return "Mobilità: " + this.mobilità + "\n" + "Resilienza: " + this.resilienza + "\n" + "Recupero: " + this.recupero + "\n" + "Disciplina: " + this.disciplina + "\n" + "Intelletto: " + this.intelletto + "\n" + "Forza: " + this.forza + "\n" + "Totale: " + this.tot() + "\n";
+                            }
                         },
+                        three: {
+                            mobilità: itemThreeStats[Object.keys(itemOneStats)[4]].value,
+                            resilienza: itemThreeStats[Object.keys(itemOneStats)[1]].value,
+                            recupero: itemThreeStats[Object.keys(itemOneStats)[3]].value,
+                            disciplina: itemThreeStats[Object.keys(itemOneStats)[2]].value,
+                            intelletto: itemThreeStats[Object.keys(itemOneStats)[0]].value,
+                            forza: itemThreeStats[Object.keys(itemOneStats)[5]].value,
 
-                        toString: function () {
-                            return "Mobilità: " + this.mobilità + "\n" + "Resilienza: " + this.resilienza + "\n" + "Recupero: " + this.recupero + "\n" + "Disciplina: " + this.disciplina + "\n" + "Intelletto: " + this.intelletto + "\n" + "Forza: " + this.forza + "\n" + "Totale: " + this.tot() + "\n";
-                        }
-                    },
-                    three: {
-                        mobilità: itemThreeStats[Object.keys(itemOneStats)[4]].value,
-                        resilienza: itemThreeStats[Object.keys(itemOneStats)[1]].value,
-                        recupero: itemThreeStats[Object.keys(itemOneStats)[3]].value,
-                        disciplina: itemThreeStats[Object.keys(itemOneStats)[2]].value,
-                        intelletto: itemThreeStats[Object.keys(itemOneStats)[0]].value,
-                        forza: itemThreeStats[Object.keys(itemOneStats)[5]].value,
+                            tot: function () {
+                                return this.mobilità + this.resilienza + this.recupero + this.disciplina + this.intelletto + this.forza;
+                            },
 
-                        tot: function () {
-                            return this.mobilità + this.resilienza + this.recupero + this.disciplina + this.intelletto + this.forza;
+                            toString: function () {
+                                return "Mobilità: " + this.mobilità + "\n" + "Resilienza: " + this.resilienza + "\n" + "Recupero: " + this.recupero + "\n" + "Disciplina: " + this.disciplina + "\n" + "Intelletto: " + this.intelletto + "\n" + "Forza: " + this.forza + "\n" + "Totale: " + this.tot() + "\n";
+                            }
                         },
+                    }
 
-                        toString: function () {
-                            return "Mobilità: " + this.mobilità + "\n" + "Resilienza: " + this.resilienza + "\n" + "Recupero: " + this.recupero + "\n" + "Disciplina: " + this.disciplina + "\n" + "Intelletto: " + this.intelletto + "\n" + "Forza: " + this.forza + "\n" + "Totale: " + this.tot() + "\n";
-                        }
-                    },
+                    var items = {
+                        error: 0,
+                        canPurchase: false,
+                        itemsHash: itemsHash,
+                        itemsStats: itemsStats
+                    }
+
+                    return items;
+                } else {
+                    var items = {
+                        error: 0,
+                        canPurchase: false,
+                        itemsHash: null,
+                        itemsStats: null
+                    }
+                    return items
                 }
-
-                var items = {
-                    itemsHash: itemsHash,
-                    itemsStats: itemsStats
-                }
-
-                return items;*/
-
-                console.log(result.data.Response.sales);
-
             }).catch(error => {
-                console.log(error);
+                var items = {
+                    error: 1,
+                    canPurchase: null,
+                    itemsHash: null,
+                    itemsStats: null
+                }
+                return items
             });
 
-        /*const querySpec = { query: "SELECT * from c WHERE c.id=\"" + items.itemsHash.weapon.itemHash + "\" OR c.id=\"" + items.itemsHash.one.itemHash + "\" OR c.id=\"" + items.itemsHash.two.itemHash + "\" OR c.id=\"" + items.itemsHash.three.itemHash + "\"" };
+        if ((items.error == 0) && (items.canPurchase == true)) {
 
-        const DbSettings = {
-            endpoint: process.env.EndPoint,
-            key: process.env.Key
-        }
+            const querySpec = { query: "SELECT * from c WHERE c.id=\"" + items.itemsHash.weapon.itemHash + "\" OR c.id=\"" + items.itemsHash.one.itemHash + "\" OR c.id=\"" + items.itemsHash.two.itemHash + "\" OR c.id=\"" + items.itemsHash.three.itemHash + "\"" };
 
-        const client = new CosmosClient(DbSettings);
-        const database = client.database(process.env.DataBaseId);
-        const container = database.container(process.env.ContainerId);
-
-        const { resources: itemsDb } = await container.items.query(querySpec).fetchAll();
-
-        const collectibles = [itemsDb[0].collectibleHash, itemsDb[1].collectibleHash, itemsDb[2].collectibleHash, itemsDb[3].collectibleHash]
-
-        const weapon = itemsDb[2].displayProperties.name + " - " + itemsDb[2].itemTypeDisplayName + "\n \n";
-        const armorOne = itemsDb[0].displayProperties.name + " - " + itemsDb[0].itemTypeDisplayName + "\n \n" + items.itemsStats.one.toString();
-        const armorTwo = itemsDb[1].displayProperties.name + " - " + itemsDb[1].itemTypeDisplayName + "\n \n" + items.itemsStats.two.toString();
-        const armorThree = itemsDb[3].displayProperties.name + " - " + itemsDb[3].itemTypeDisplayName + "\n \n" + items.itemsStats.three.toString();
-
-        var result = {
-            weapon: weapon,
-            armorOne: armorOne,
-            armorTwo: armorTwo,
-            armorThree: armorThree,
-
-            toString: function () {
-                return this.weapon + "\n" + this.armorOne + "\n" + this.armorTwo + "\n" + this.armorThree;
+            const DbSettings = {
+                endpoint: process.env.EndPoint,
+                key: process.env.Key
             }
+
+            const client = new CosmosClient(DbSettings);
+            const database = client.database(process.env.DataBaseId);
+            const container = database.container(process.env.ContainerId);
+
+            const { resources: itemsDb } = await container.items.query(querySpec).fetchAll();
+
+            const weapon = itemsDb[2].displayProperties.name + " - " + itemsDb[2].itemTypeDisplayName + "\n \n";
+            const armorOne = itemsDb[0].displayProperties.name + " - " + itemsDb[0].itemTypeDisplayName + "\n \n" + items.itemsStats.one.toString();
+            const armorTwo = itemsDb[1].displayProperties.name + " - " + itemsDb[1].itemTypeDisplayName + "\n \n" + items.itemsStats.two.toString();
+            const armorThree = itemsDb[3].displayProperties.name + " - " + itemsDb[3].itemTypeDisplayName + "\n \n" + items.itemsStats.three.toString();
+
+            var result = {
+                error: 0,
+                canPurchase: true,
+                weapon: weapon,
+                armorOne: armorOne,
+                armorTwo: armorTwo,
+                armorThree: armorThree,
+            }
+            return result;
         }
-        return result;*/
+
+        if (items.error == 1) {
+            var result = {
+                error: 1,
+                canPurchase: true,
+                weapon: null,
+                armorOne: null,
+                armorTwo: null,
+                armorThree: null,
+            }
+            return result;
+        }
+
+        if (items.canPurchase == false) {
+            var result = {
+                error: 0,
+                canPurchase: false,
+                weapon: null,
+                armorOne: null,
+                armorTwo: null,
+                armorThree: null,
+            }
+            return result;
+        }
     }
 }
 module.exports.BungieRequester = BungieRequester;

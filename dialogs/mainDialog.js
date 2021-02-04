@@ -1,5 +1,5 @@
 //Importazione di vari moduli
-const { ActivityTypes, MessageFactory, InputHints, CardFactory } = require('botbuilder');
+const { ActivityTypes, MessageFactory, InputHints, CardFactory, TestAdapter } = require('botbuilder');
 const { TextPrompt, ComponentDialog, DialogSet, DialogTurnStatus, WaterfallDialog } = require('botbuilder-dialogs');
 const { LuisRecognizer } = require('botbuilder-ai');
 const { BungieRequester } = require('../API/BungieRequester');
@@ -41,8 +41,6 @@ class MainDialog extends ComponentDialog {
         this.br = new BungieRequester(process.env.BungieApiKey, process.env.BungieClientId, process.env.BungieCallBack);
 
         this.initialDialogId = WATERFALL_DIALOG;
-
-        this.userProfile = null;
     }
 
     /**
@@ -65,11 +63,11 @@ class MainDialog extends ComponentDialog {
         const reply = {
             type: ActivityTypes.Message
         };
-
-        this.userProfile = await this.userProfileAccessor.get(step.context, {});
+ 
+        var accessdata = await this.userProfileAccessor.get(step.context, {});
 
         var card = CardFactory.thumbnailCard(
-            'Login richiesto o codice di accesso scaduto',
+            'Login richiesto o codice di accesso scaduto.',
             [],
             [{
                 type: 'openUrl',
@@ -84,11 +82,11 @@ class MainDialog extends ComponentDialog {
         reply.attachments = [card];
         await step.context.sendActivity(reply)
 
-        this.userProfile.accessdata = await this.br.getAccessData();
+        accessdata = await this.br.getAccessData();
 
-        //forse la user profile va settata
+        await this.userProfileAccessor.set(step.context, accessdata);
 
-        const name = await this.br.getName(this.userProfile.accessdata.membership_id, 1);
+        const name = await this.br.getName(accessdata.membership_id, 1);
 
         await step.context.sendActivity("Codice di accesso ottenuto, salve " + name + ".")
     }
@@ -103,13 +101,13 @@ class MainDialog extends ComponentDialog {
 
         if (didBotWelcomedUser === false) {
             var card = CardFactory.thumbnailCard(
-                'Salvo Guardiano/a ! Sono il Destiny Vendor Bot.',
+                'Salve Guardiano/a ! Sono il Destiny Vendor Bot.',
                 [{
-                    url: "https://i.postimg.cc/HLtSwpmq/welcome-Photo.png"
+                    url: "https://i.postimg.cc/cHpnVgGg/bunshee.png"
                 }],
                 [],
                 {
-                    text: 'Puoi chiedermi di mostrarti gli inventari di tre dei nostri amici vendor: Banshee-44, Xur e il ragno. Prima di iniziare ricordati di effettuare il login, che dovrai ripetere ogni 30 minuti di inattivita (Zavala non ci ha dato abbastanza fondi). Che la luce del viaggiatore sia con te.',
+                    text: 'Puoi chiedermi di mostrarti gli inventari di tre dei nostri amici vendor: Banshee-44, Xur e il ragno. Prima di iniziare ricordati di effettuare il login, che dovrai ripetere ogni 60 minuti di inattività (Zavala non ci ha dato abbastanza fondi). Che la luce del Viaggiatore sia con te.',
                 }
             );
 
@@ -136,6 +134,9 @@ class MainDialog extends ComponentDialog {
 
     // Forwards to the correct dialog based on the menu option or the intent recognized by LUIS
     async vendorStep(step) {
+
+        const accessdata = await this.userProfileAccessor.get(step.context, {});
+
         const reply = {
             type: ActivityTypes.Message
         };
@@ -145,7 +146,7 @@ class MainDialog extends ComponentDialog {
 
         //Mostra l'invetraio dell'armaiolo
         if (LuisRecognizer.topIntent(luisResult) === 'GetGunsmith') {
-            const mod = await this.br.getGunsmith(this.userProfile.accessdata, 1, 2);
+            const mod = await this.br.getGunsmith(accessdata, 1, 2);
 
             if (mod.error == 0) {
 
@@ -273,7 +274,7 @@ class MainDialog extends ComponentDialog {
 
         //Mostra l'invetraio del ragno
         if (LuisRecognizer.topIntent(luisResult) === "GetSpider") {
-            const item = await this.br.getSpider(this.userProfile.accessdata, 1, 2)
+            const item = await this.br.getSpider(accessdata, 1, 2)
 
             if (item.error == 0) {
 
@@ -762,7 +763,19 @@ class MainDialog extends ComponentDialog {
 
         //Mostra l'invetraio di Xur
         if (LuisRecognizer.topIntent(luisResult) === "GetXur") {
-            reply.text = (await this.br.getXur(this.userProfile.accessdata, 1, 2)).toString();
+            const item = await this.br.getXur(accessdata, 1, 2);
+
+            if ((item.error == 0) && (item.canPurchase == true)) {
+                await step.context.sendActivity("Qui ci va la stampa.");
+            }
+            if (item.canPurchase == false) {
+                await step.context.sendActivity("Xur oggi non c'è. Riprova il nel week-end.");
+            }
+            if (item.error == 1) {
+                await step.context.sendActivity("Codice di accesso scaduto.");
+                await this.loginStep(step);
+            }
+
             await step.context.sendActivity(reply)
         }
 
