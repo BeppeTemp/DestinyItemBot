@@ -63,7 +63,7 @@ class MainDialog extends ComponentDialog {
         const reply = {
             type: ActivityTypes.Message
         };
- 
+
         var accessdata = await this.userProfileAccessor.get(step.context, {});
 
         var card = CardFactory.thumbnailCard(
@@ -79,7 +79,7 @@ class MainDialog extends ComponentDialog {
                 text: '(Non inviare messaggi prima di aver completato la procedura di login)',
             }
         );
-        
+
         reply.attachments = [card];
         await step.context.sendActivity(reply)
 
@@ -776,8 +776,6 @@ class MainDialog extends ComponentDialog {
                 await step.context.sendActivity("Codice di accesso scaduto.");
                 await this.loginStep(step);
             }
-
-            await step.context.sendActivity(reply)
         }
 
         //Richiesta non supportata
