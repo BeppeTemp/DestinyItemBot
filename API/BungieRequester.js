@@ -11,18 +11,20 @@ const { CosmosClient } = require("@azure/cosmos");
 //Importazione del .env
 const path = require('path');
 const dotenv = require('dotenv');
+const { NullTelemetryClient } = require("botbuilder");
 const ENV_FILE = path.join(__dirname, '../.env');
 dotenv.config({ path: ENV_FILE });
 
 class BungieRequester {
     //Costruttore
-    constructor(apiKey, clientId, callBack) {
+    constructor() {
         this.basePath = process.env.BungieBasePath;
         this.baseLoginPath = process.env.BungieBaseLoginPath;
 
-        this.apiKey = apiKey;
-        this.clientId = clientId;
-        this.callBack = callBack;
+        this.apiKey = process.env.BungieApiKey;
+        this.clientId = process.env.BungieClientId;
+        this.clientSecret = process.env.BungieClientSecret;
+        this.callBack = process.env.BungieCallBack;
 
         this.state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     }
@@ -51,50 +53,23 @@ class BungieRequester {
         return name;
     }
 
-    //Verifica ad la presenza del OauthCode all'interno della storage queue
-    async getOauthCode() {
-        const queueServiceClient = QueueServiceClient.fromConnectionString(process.env.StorageAccountEndPoint);
-
-        var queues;
-        var flag = 0;
-
-        while (!flag) {
-            queues = await (await queueServiceClient.listQueues().byPage().next()).value.queueItems;
-            for (let i = 0; i < queues.length; i++) {
-                if (queues[i].name.localeCompare(this.state) == 0) {
-                    flag = 1;
-                }
-            }
-            await sleep(parseInt(process.env.TimeOne) * 1000).then(() => { })
-        }
-
-        const queueClient = queueServiceClient.getQueueClient(this.state);
-
-        var receivedMessages = await queueClient.receiveMessages();
-        var message = receivedMessages.receivedMessageItems[0];
-
-        queueServiceClient.deleteQueue(this.state)
-
-        return message.messageText;
-    }
-
     //Recupera i dati di accesso (Access_Token, Token_Type, Exipers_In, Memebership_Id)
-    async getAccessData() {
-
-        await sleep(parseInt(process.env.TimeTwo) * 1000).then(() => { })
-
+    async getAccessData(code) {
         var res = {
             error: 0,
             access_token: null,
             token_type: null,
             expires_in: null,
+            refresh_token: null,
+            refresh_expires_in: null,
             membership_id: null
         }
 
         const data = {
             client_id: this.clientId,
             grant_type: "authorization_code",
-            code: await this.getOauthCode()
+            code: code,
+            client_secret: this.clientSecret
         }
 
         await axios.post(this.basePath + '/app/oauth/token/', qs.stringify(data))
@@ -102,9 +77,45 @@ class BungieRequester {
                 res.access_token = result.data.access_token;
                 res.token_type = result.data.token_type;
                 res.expires_in = result.data.expires_in;
+                res.refresh_token = result.data.refresh_token;
+                res.refresh_expires_in = result.data.refresh_expires_in;
                 res.membership_id = result.data.membership_id;
             }).catch(error => {
-                console.log(error.data);
+                console.log(error);
+            });
+
+        return res;
+    }
+
+    async refreshAccessData(oldcode){
+        var res = {
+            error: 0,
+            access_token: null,
+            token_type: null,
+            expires_in: null,
+            refresh_token: null,
+            refresh_expires_in: null,
+            membership_id: null
+        }
+
+        const data = {
+            client_id: this.clientId,
+            grant_type: "refresh_token",
+            refresh_token: oldcode,
+            client_secret: this.clientSecret
+        }
+
+        await axios.post(this.basePath + '/app/oauth/token/', qs.stringify(data))
+            .then(result => {
+                res.access_token = result.data.access_token;
+                res.token_type = result.data.token_type;
+                res.expires_in = result.data.expires_in;
+                res.refresh_token = result.data.refresh_token;
+                res.refresh_expires_in = result.data.refresh_expires_in;
+                res.membership_id = result.data.membership_id;
+            }).catch(error => {
+                res.error = 1;
+                console.log(error);
             });
 
         return res;
