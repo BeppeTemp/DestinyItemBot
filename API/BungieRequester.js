@@ -1,31 +1,20 @@
-//Importazione di vari moduli
-const axios = require("axios");
-const qs = require("qs");
-const { promisify } = require('util')
-const sleep = promisify(setTimeout)
-
-//Importazione dei servizi Azure
-const { QueueServiceClient } = require("@azure/storage-queue");
+const { axios } = require("axios");
+const { qs } = require("qs");
 const { CosmosClient } = require("@azure/cosmos");
 
-//Importazione del .env
 const path = require('path');
 const dotenv = require('dotenv');
-const { NullTelemetryClient } = require("botbuilder");
 const ENV_FILE = path.join(__dirname, '../.env');
 dotenv.config({ path: ENV_FILE });
 
 class BungieRequester {
-    //Costruttore
     constructor() {
         this.basePath = process.env.BungieBasePath;
         this.baseLoginPath = process.env.BungieBaseLoginPath;
-
         this.apiKey = process.env.BungieApiKey;
         this.clientId = process.env.BungieClientId;
         this.clientSecret = process.env.BungieClientSecret;
         this.callBack = process.env.BungieCallBack;
-
         this.state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     }
 
@@ -53,7 +42,7 @@ class BungieRequester {
         return name;
     }
 
-    //Recupera i dati di accesso (Access_Token, Token_Type, Exipers_In, Memebership_Id)
+    //Recupera i dati di accesso
     async getAccessData(code) {
         var res = {
             error: 0,
@@ -64,14 +53,12 @@ class BungieRequester {
             refresh_expires_in: null,
             membership_id: null
         }
-
         const data = {
             client_id: this.clientId,
             grant_type: "authorization_code",
             code: code,
             client_secret: this.clientSecret
         }
-
         await axios.post(this.basePath + '/app/oauth/token/', qs.stringify(data))
             .then(result => {
                 res.access_token = result.data.access_token;
@@ -83,11 +70,11 @@ class BungieRequester {
             }).catch(error => {
                 console.log(error);
             });
-
         return res;
     }
 
-    async refreshAccessData(oldcode){
+    //Aggiorna l'access token
+    async refreshAccessData(oldcode) {
         var res = {
             error: 0,
             access_token: null,
@@ -97,14 +84,12 @@ class BungieRequester {
             refresh_expires_in: null,
             membership_id: null
         }
-
         const data = {
             client_id: this.clientId,
             grant_type: "refresh_token",
             refresh_token: oldcode,
             client_secret: this.clientSecret
         }
-
         await axios.post(this.basePath + '/app/oauth/token/', qs.stringify(data))
             .then(result => {
                 res.access_token = result.data.access_token;
@@ -117,7 +102,6 @@ class BungieRequester {
                 res.error = 1;
                 console.log(error);
             });
-
         return res;
     }
 
@@ -161,9 +145,7 @@ class BungieRequester {
             }).catch(error => {
                 console.log(error);
             });
-
         const check = [checkList[items[0].collectibleHash].state, checkList[items[1].collectibleHash].state];
-
         return check;
     }
 
@@ -171,7 +153,6 @@ class BungieRequester {
     async getGunsmith(accessdata, membershipType, character) {
         var membershipPlatformId = await this.getPlatformID(await accessdata.membership_id, membershipType);
         var characterId = await this.getCharacterId(await membershipPlatformId, membershipType, character);
-
         var mods = await axios.get(this.basePath + '/Destiny2/' + membershipType + '/Profile/' + membershipPlatformId + '/Character/' + characterId + '/Vendors/' + process.env.Gunsmith + '/?components=402', {
             headers: {
                 "X-API-Key": this.apiKey,
@@ -197,20 +178,15 @@ class BungieRequester {
 
         if (mods.error == 0) {
             const querySpec = { query: "SELECT * from c WHERE c.id=\"" + mods.first.itemHash + "\" OR c.id=\"" + mods.second.itemHash + "\"" };
-
             const DbSettings = {
                 endpoint: process.env.EndPoint,
                 key: process.env.Key
             }
-
             const client = new CosmosClient(DbSettings);
             const database = client.database(process.env.DataBaseId);
             const container = database.container(process.env.ContainerId);
-
             const { resources: items } = await container.items.query(querySpec).fetchAll();
-
             const check = await this.checkMod(membershipPlatformId, membershipType, items);
-
             var mod = {
                 error: 0,
                 modOne: {
@@ -232,7 +208,6 @@ class BungieRequester {
                     }
                 }
             }
-
             if (check[0] == 64) {
                 mod.modOne.have.text = "(Già acquistata)";
                 mod.modOne.have.color = "good";
@@ -241,7 +216,6 @@ class BungieRequester {
                 mod.modTwo.have.text = "(Già acquistata)";
                 mod.modTwo.have.color = "good";
             }
-
         } else {
             var mod = {
                 error: 1,
@@ -272,7 +246,6 @@ class BungieRequester {
     async getSpider(accessdata, membershipType, character) {
         var membershipPlatformId = await this.getPlatformID(await accessdata.membership_id, membershipType);
         var characterId = await this.getCharacterId(await membershipPlatformId, membershipType, character);
-
         var spiderItems = await axios.get(this.basePath + '/Destiny2/' + membershipType + '/Profile/' + membershipPlatformId + '/Character/' + characterId + '/Vendors/' + process.env.Spider + '/?components=402', {
             headers: {
                 "X-API-Key": this.apiKey,
@@ -289,7 +262,6 @@ class BungieRequester {
                     result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[5]].itemHash,
                     result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[6]].itemHash,
                 ]
-
                 const costs = [
                     result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]].costs,
                     result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[1]].costs,
@@ -299,13 +271,11 @@ class BungieRequester {
                     result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[5]].costs,
                     result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[6]].costs,
                 ]
-
                 const spiderItems = {
                     error: 0,
                     items: items,
                     costs: costs,
                 }
-
                 return spiderItems;
             }).catch(error => {
                 console.log(error);
@@ -318,29 +288,23 @@ class BungieRequester {
             });
 
         if (spiderItems.error == 0) {
-
             const DbSettings = {
                 endpoint: process.env.EndPoint,
                 key: process.env.Key
             }
-
             const client = new CosmosClient(DbSettings);
             const database = client.database(process.env.DataBaseId);
             const container = database.container(process.env.ContainerId);
-
             const items = [];
             const costs = [];
-
             for (let i = 0; i < spiderItems.items.length; i++) {
                 const { resources: item } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.items[i] + "\"").fetchAll();
                 items[i] = item[0];
             }
-
             for (let i = 0; i < spiderItems.costs.length; i++) {
                 const { resources: cost } = await container.items.query("SELECT * from c WHERE c.id=\"" + spiderItems.costs[i][0].itemHash + "\"").fetchAll();
                 costs[i] = cost[0];
             }
-
             const itemsSold = {
                 error: 0,
                 itemOne: {
@@ -434,7 +398,6 @@ class BungieRequester {
     async getXur(accessdata, membershipType, character) {
         var membershipPlatformId = await this.getPlatformID(await accessdata.membership_id, membershipType);
         var characterId = await this.getCharacterId(await membershipPlatformId, membershipType, character);
-
         var items = await axios.get(this.basePath + '/Destiny2/' + membershipType + '/Profile/' + membershipPlatformId + '/Character/' + characterId + '/Vendors/' + process.env.xur + '/?components=304,400,401,402', {
             headers: {
                 "X-API-Key": this.apiKey,
@@ -442,20 +405,16 @@ class BungieRequester {
             }
         })
             .then(result => {
-                
                 if (result.data.Response.vendor.data.canPurchase) {
-
                     let itemOneStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[1]].stats;
                     let itemTwoStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[2]].stats;
                     let itemThreeStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[3]].stats;
-
                     var itemsHash = {
                         weapon: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[2]],
                         one: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]],
                         two: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[1]],
                         three: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[3]],
                     }
-
                     var itemsStats = {
                         one: {
                             mobilità: itemOneStats[Object.keys(itemOneStats)[4]].value,
@@ -506,14 +465,12 @@ class BungieRequester {
                             }
                         },
                     }
-
                     var items = {
                         error: 0,
                         canPurchase: false,
                         itemsHash: itemsHash,
                         itemsStats: itemsStats
                     }
-
                     return items;
                 } else {
                     var items = {
@@ -535,25 +492,19 @@ class BungieRequester {
             });
 
         if ((items.error == 0) && (items.canPurchase == true)) {
-
             const querySpec = { query: "SELECT * from c WHERE c.id=\"" + items.itemsHash.weapon.itemHash + "\" OR c.id=\"" + items.itemsHash.one.itemHash + "\" OR c.id=\"" + items.itemsHash.two.itemHash + "\" OR c.id=\"" + items.itemsHash.three.itemHash + "\"" };
-
             const DbSettings = {
                 endpoint: process.env.EndPoint,
                 key: process.env.Key
             }
-
             const client = new CosmosClient(DbSettings);
             const database = client.database(process.env.DataBaseId);
             const container = database.container(process.env.ContainerId);
-
             const { resources: itemsDb } = await container.items.query(querySpec).fetchAll();
-
             const weapon = itemsDb[2].displayProperties.name + " - " + itemsDb[2].itemTypeDisplayName + "\n \n";
             const armorOne = itemsDb[0].displayProperties.name + " - " + itemsDb[0].itemTypeDisplayName + "\n \n" + items.itemsStats.one.toString();
             const armorTwo = itemsDb[1].displayProperties.name + " - " + itemsDb[1].itemTypeDisplayName + "\n \n" + items.itemsStats.two.toString();
             const armorThree = itemsDb[3].displayProperties.name + " - " + itemsDb[3].itemTypeDisplayName + "\n \n" + items.itemsStats.three.toString();
-
             var result = {
                 error: 0,
                 canPurchase: true,
@@ -564,7 +515,6 @@ class BungieRequester {
             }
             return result;
         }
-
         if (items.error == 1) {
             var result = {
                 error: 1,
@@ -576,7 +526,6 @@ class BungieRequester {
             }
             return result;
         }
-
         if (items.canPurchase == false) {
             var result = {
                 error: 0,

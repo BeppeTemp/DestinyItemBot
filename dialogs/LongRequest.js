@@ -1,10 +1,10 @@
 const { CardFactory, BotFrameworkAdapter } = require('botbuilder');
 
+//Contine una serie di metodi che ritornano messaggi proattivi per gestire richieste più lunghe di 15 secondi
 class LongRequest {
-
+    //Ritorna l'inventario dell'armaiolo
     static async getGunsmithLong(br, accessdata, conversationReference) {
         const mod = await br.getGunsmith(accessdata, process.env.MemberShipType, process.env.Character);
-
         // Set up the adapter and send the message
         try {
             const adapter = new BotFrameworkAdapter({
@@ -124,7 +124,6 @@ class LongRequest {
                         "url": "https://i.postimg.cc/43r31T11/card-Background.png"
                     }
                 }
-
                 await turnContext.sendActivity({
                     text: 'Ecco le mod vendute oggi da Banshee-44:',
                     attachments: [CardFactory.adaptiveCard(card)]
@@ -135,7 +134,7 @@ class LongRequest {
             console.log(error);
         }
     }
-
+    //Ritorna l'inventario del Ragno
     static async getSpiderLong(br, accessdata, conversationReference) {
         const item = await br.getSpider(accessdata, process.env.MemberShipType, process.env.Character)
         // Set up the adapter and send the message
@@ -619,7 +618,6 @@ class LongRequest {
                         "url": "https://i.postimg.cc/43r31T11/card-Background.png"
                     }
                 }
-
                 await turnContext.sendActivity({
                     text: 'Ecco i materiali venduti oggi dal Ragno:',
                     attachments: [CardFactory.adaptiveCard(card)]
@@ -630,7 +628,7 @@ class LongRequest {
             console.log(error);
         }
     }
-
+    //Ritorna l'inventraio di Xur
     static async getXurLong(br, accessdata, conversationReference) {
         const item = await br.getXur(accessdata, process.env.MemberShipType, process.env.Character);
         // Set up the adapter and send the message

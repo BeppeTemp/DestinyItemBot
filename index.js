@@ -61,6 +61,3 @@ server.post('/api/messages', (req, res) => {
         await bot.run(context);
     });
 });
-
-//9f256ef2-2131-4644-be77-05bbe8fa5cb1
-//GfL%0_}iUc|$WbsVoJJ&t@z*Esp
