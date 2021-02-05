@@ -1,5 +1,5 @@
 //Importazione dei servizi Azure
-const { ActivityHandler, CardFactory, ActivityTypes } = require('botbuilder');
+const { ActivityHandler} = require('botbuilder');
 
 class DestinyVendorBot extends ActivityHandler {
     constructor(conversationState, userState, dialog) {
