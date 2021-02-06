@@ -1,7 +1,7 @@
 # DestinyVendorBot
-Questo bot permette di vedere l'inventario dell'armaiolo e di conoscere se l'oggetto in vendita è già nel tuo inventario, del ragno e di xur. 
-E' prevista prima una fase di login, dopodichè è possibile effettuare le query desiderate. 
-Sono prestivi anche alcuni comandi come /restart per restartare il bot, oppure /logout per vuoi uscire dal bot ed eliminare le tue credenziali d'accesso.
+This bot allows you to see the inventory of the gunsmith and know if the item for sale is already in your inventory, spider and xur. 
+A login phase is provided first, after which it is possible to carry out the desired queries. 
+There are also some commands such as /restart to restart the bot, or /logout to want to exit the bot and delete your login credentials.
 
 ### If you want try the bot on Telegram
 @DestinyVendorBot
