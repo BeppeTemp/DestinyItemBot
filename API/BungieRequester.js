@@ -1,5 +1,6 @@
 const axios = require("axios");
 const qs = require("qs");
+var fs = require('fs');
 const { CosmosClient } = require("@azure/cosmos");
 
 const path = require('path');
@@ -551,6 +552,52 @@ class BungieRequester {
             }
             return result;
         }
+    }
+
+    //Cerca un item id
+    async getItems(accessdata, membershipPlatformId, membershipType){
+        console.log(membershipPlatformId)
+        console.log(accessdata.token_type)
+        console.log(accessdata.access_token)
+        return await axios.get(this.basePath + '/Destiny2/' + membershipType + '/' + 'Profile/' + membershipPlatformId + '/?components=102,201', {
+            headers: {
+                "X-API-Key": this.apiKey,
+                "Authorization": accessdata.token_type + " " + accessdata.access_token,
+            }
+        })
+            .then(result => {
+                console.log(result.data.Response)
+            }).catch(error => {
+                console.log(error.data);
+            });
+    }
+
+    //Sposta un item dal deposito a un personaggio
+    async moveItem(accessdata, membershipType, character){
+        var membershipPlatformId = await this.getPlatformID(await accessdata.membership_id, membershipType);
+        var characterId = await this.getCharacterId(membershipPlatformId, membershipType, character);
+
+        this.getItems(accessdata, membershipPlatformId,1);
+
+        /*const data = {
+            membershipType: "1",
+            itemReferenceHash: "2603483885",
+            itemId: "6917529212455552628",
+            characterId: characterId,
+            stackSize: "1",
+            transferToVault: "false",
+        }
+        await axios.post(this.basePath + '/Destiny2/Actions/Items/TransferItem/', data,{
+            headers: {
+                "Authorization": accessdata.token_type + " " + accessdata.access_token,
+                "X-API-Key": this.apiKey
+            }
+        })
+            .then(result => {
+                console.log(result);
+            }).catch(error => {
+                console.log(error.response.data);
+            });*/
     }
 }
 module.exports.BungieRequester = BungieRequester;

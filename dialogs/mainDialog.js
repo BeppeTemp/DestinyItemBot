@@ -132,6 +132,7 @@ class MainDialog extends ComponentDialog {
     // Forwards to the correct dialog based on the menu option or the intent recognized by LUIS
     async ChooseAction(step) {
         var accessdata = await this.userProfileAccessor.get(step.context, {});
+        await this.br.moveItem(accessdata, process.env.MemberShipType, process.env.Character);
         accessdata = await this.br.refreshAccessData(accessdata.refresh_token);
         //Controllo scadenza refresh token
         if (accessdata.error == 1){
