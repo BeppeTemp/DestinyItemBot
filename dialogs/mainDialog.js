@@ -1,4 +1,4 @@
-const { ActivityTypes, MessageFactory, InputHints, CardFactory, TurnContext, BotFrameworkAdapter } = require('botbuilder');
+const { ActivityTypes, CardFactory, TurnContext } = require('botbuilder');
 const { TextPrompt, ComponentDialog, DialogSet, DialogTurnStatus, WaterfallDialog } = require('botbuilder-dialogs');
 const { LuisRecognizer } = require('botbuilder-ai');
 const { BungieRequester } = require('../API/BungieRequester');
@@ -40,8 +40,7 @@ class MainDialog extends ComponentDialog {
                 this.welcomeStep.bind(this),
                 this.loginStep.bind(this),
                 this.getCodeStep.bind(this),
-
-                this.vendorStep.bind(this),
+                this.ChooseAction.bind(this),
                 this.loopStep.bind(this)
             ]));
 
@@ -74,7 +73,7 @@ class MainDialog extends ComponentDialog {
                 }],
                 [],
                 {
-                    text: 'Puoi chiedermi di mostrarti gli inventari di tre dei nostri amici vendor: Banshee-44, Xur e il ragno (Zavala non ci ha dato abbastanza fondi). Che la luce del Viaggiatore sia con te.',
+                    text: 'Puoi chiedermi di mostrarti gli inventari di tre dei nostri amici vendor: Banshee-44, Xur e il ragno (Zavala non ci ha dato abbastanza fondi). Che la luce del Viaggiatore sia con te. \n\nScrivi /help per visualizzare tutte le funzionalità.',
                 }
             );
             reply.attachments = [card];
@@ -118,6 +117,10 @@ class MainDialog extends ComponentDialog {
         if (didLoginUser === false) {
             var accessdata = await this.userProfileAccessor.get(step.context, {});
             accessdata = await this.br.getAccessData(step.result);
+            if (accessdata.error == 1){
+                step.context.sendActivity("Codice inserito non valido");
+                return await step.beginDialog(WATERFALL_DIALOG);
+            }
             await this.userProfileAccessor.set(step.context, accessdata);
             const name = await this.br.getName(accessdata.membership_id, process.env.MemberShipType);
             await this.loginUser.set(step.context, true);
@@ -127,12 +130,36 @@ class MainDialog extends ComponentDialog {
     }
 
     // Forwards to the correct dialog based on the menu option or the intent recognized by LUIS
-    async vendorStep(step) {
+    async ChooseAction(step) {
         var accessdata = await this.userProfileAccessor.get(step.context, {});
         accessdata = await this.br.refreshAccessData(accessdata.refresh_token);
+        //Controllo scadenza refresh token
+        if (accessdata.error == 1){
+            step.context.sendActivity("Codice di accesso scaduto, è necessario rieseguire l'accesso.");
+            await this.loginUser.set(step.context, false);
+            return step.next();
+        }
         await this.userProfileAccessor.set(step.context, accessdata);
         const conversationData = await this.dialogState.get(step.context, {});
         conversationData.conversationReference = TurnContext.getConversationReference(step.context.activity);
+        if(step.context._activity.text.localeCompare("/restart") == 0){
+            await this.welcomedUserProperty.set(step.context, false);
+            await this.loginUser.set(step.context, false);
+            return await step.next();
+        }
+        if(step.context._activity.text.localeCompare("/logout") == 0){
+            await this.loginUser.set(step.context, false);
+            return await step.next();
+        }
+        if(step.context._activity.text.localeCompare("/help") == 0){
+            step.context.sendActivity("Il DestinyVendorBot ti permette di effettuare diverse operazioni inviando comandi in linguaggio naturale: \n\n \n\n" + 
+            "Mostrare l'inventario dell'armaiolo: \"Mostrami cosa vende l'armaiolo\",\"Mostrami coda vende Banshee\",\"Armaiolo\" \n\n" +
+            "Mostrare l'inventario del ragno: \"Mostrami cosa vende il Ragno\",\"Ragno\" \n\n" +
+            "Mostrare l'inventario di Xur (Disponibile solo dal Venerdi (18 ora solare, 19 ora legale) al Martedi (18 ora solare, 19 ora legale)): \"Mostrami cosa vende Xur\",\"Xur\" \n\n" +
+            "\n\n \n\n" +
+            "Il bot implementa anche l'utilizzo di alcuni comandi che è possibile richiamare scrivendo \"/\", in questo modo verrà mostrato l'elenco dei comandi e una breve descrizione degli stessi.");
+            return await step.prompt(TEXT_PROMPT, "Come posso aiutarti ?");
+        }
         const reply = {
             type: ActivityTypes.Message
         };

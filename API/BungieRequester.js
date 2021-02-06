@@ -68,7 +68,8 @@ class BungieRequester {
                 res.refresh_expires_in = result.data.refresh_expires_in;
                 res.membership_id = result.data.membership_id;
             }).catch(error => {
-                console.log(error);
+                res.error = 1;
+                console.log(error.response.data);
             });
         return res;
     }
@@ -100,7 +101,7 @@ class BungieRequester {
                 res.membership_id = result.data.membership_id;
             }).catch(error => {
                 res.error = 1;
-                console.log(error);
+                console.log(error.response.data);
             });
         return res;
     }
@@ -405,7 +406,7 @@ class BungieRequester {
             }
         })
             .then(result => {
-                if (result.data.Response.vendor.data.canPurchase) {
+                if (Object.keys(result.data.Response.sales.data).length > 4) {
                     let itemOneStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[1]].stats;
                     let itemTwoStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[2]].stats;
                     let itemThreeStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[3]].stats;
@@ -427,10 +428,6 @@ class BungieRequester {
                             tot: function () {
                                 return this.mobilità + this.resilienza + this.recupero + this.disciplina + this.intelletto + this.forza;
                             },
-
-                            toString: function () {
-                                return "Mobilità: " + this.mobilità + "\n" + "Resilienza: " + this.resilienza + "\n" + "Recupero: " + this.recupero + "\n" + "Disciplina: " + this.disciplina + "\n" + "Intelletto: " + this.intelletto + "\n" + "Forza: " + this.forza + "\n" + "Totale: " + this.tot() + "\n";
-                            }
                         },
                         two: {
                             mobilità: itemTwoStats[Object.keys(itemOneStats)[4]].value,
@@ -443,10 +440,6 @@ class BungieRequester {
                             tot: function () {
                                 return this.mobilità + this.resilienza + this.recupero + this.disciplina + this.intelletto + this.forza;
                             },
-
-                            toString: function () {
-                                return "Mobilità: " + this.mobilità + "\n" + "Resilienza: " + this.resilienza + "\n" + "Recupero: " + this.recupero + "\n" + "Disciplina: " + this.disciplina + "\n" + "Intelletto: " + this.intelletto + "\n" + "Forza: " + this.forza + "\n" + "Totale: " + this.tot() + "\n";
-                            }
                         },
                         three: {
                             mobilità: itemThreeStats[Object.keys(itemOneStats)[4]].value,
@@ -459,22 +452,16 @@ class BungieRequester {
                             tot: function () {
                                 return this.mobilità + this.resilienza + this.recupero + this.disciplina + this.intelletto + this.forza;
                             },
-
-                            toString: function () {
-                                return "Mobilità: " + this.mobilità + "\n" + "Resilienza: " + this.resilienza + "\n" + "Recupero: " + this.recupero + "\n" + "Disciplina: " + this.disciplina + "\n" + "Intelletto: " + this.intelletto + "\n" + "Forza: " + this.forza + "\n" + "Totale: " + this.tot() + "\n";
-                            }
                         },
                     }
                     var items = {
-                        error: 0,
-                        canPurchase: false,
+                        canPurchase: true,
                         itemsHash: itemsHash,
                         itemsStats: itemsStats
                     }
                     return items;
                 } else {
                     var items = {
-                        error: 0,
                         canPurchase: false,
                         itemsHash: null,
                         itemsStats: null
@@ -482,16 +469,10 @@ class BungieRequester {
                     return items
                 }
             }).catch(error => {
-                var items = {
-                    error: 1,
-                    canPurchase: null,
-                    itemsHash: null,
-                    itemsStats: null
-                }
-                return items
+                console.log(error);
             });
 
-        if ((items.error == 0) && (items.canPurchase == true)) {
+        if (items.canPurchase == true) {
             const querySpec = { query: "SELECT * from c WHERE c.id=\"" + items.itemsHash.weapon.itemHash + "\" OR c.id=\"" + items.itemsHash.one.itemHash + "\" OR c.id=\"" + items.itemsHash.two.itemHash + "\" OR c.id=\"" + items.itemsHash.three.itemHash + "\"" };
             const DbSettings = {
                 endpoint: process.env.EndPoint,
@@ -501,39 +482,72 @@ class BungieRequester {
             const database = client.database(process.env.DataBaseId);
             const container = database.container(process.env.ContainerId);
             const { resources: itemsDb } = await container.items.query(querySpec).fetchAll();
-            const weapon = itemsDb[2].displayProperties.name + " - " + itemsDb[2].itemTypeDisplayName + "\n \n";
-            const armorOne = itemsDb[0].displayProperties.name + " - " + itemsDb[0].itemTypeDisplayName + "\n \n" + items.itemsStats.one.toString();
-            const armorTwo = itemsDb[1].displayProperties.name + " - " + itemsDb[1].itemTypeDisplayName + "\n \n" + items.itemsStats.two.toString();
-            const armorThree = itemsDb[3].displayProperties.name + " - " + itemsDb[3].itemTypeDisplayName + "\n \n" + items.itemsStats.three.toString();
-            var result = {
-                error: 0,
+            const result = {
                 canPurchase: true,
-                weapon: weapon,
-                armorOne: armorOne,
-                armorTwo: armorTwo,
-                armorThree: armorThree,
-            }
-            return result;
-        }
-        if (items.error == 1) {
-            var result = {
-                error: 1,
-                canPurchase: true,
-                weapon: null,
-                armorOne: null,
-                armorTwo: null,
-                armorThree: null,
+                weapon: {
+                    name: itemsDb[1].displayProperties.name,
+                    type: itemsDb[1].itemTypeDisplayName,
+                    icon: "https://www.bungie.net/" + itemsDb[1].displayProperties.icon,
+                },
+                armorOne: {
+                    name: itemsDb[0].displayProperties.name + " - " + itemsDb[0].itemTypeDisplayName,
+                    stats: {
+                        all: items.itemsStats.one,
+                        tot: items.itemsStats.one.tot(),
+                    },
+                    icon: "https://www.bungie.net/" + itemsDb[0].displayProperties.icon,
+                },
+                armorTwo: {
+                    name: itemsDb[2].displayProperties.name + " - " + itemsDb[2].itemTypeDisplayName,
+                    stats: {
+                        all: items.itemsStats.two,
+                        tot: items.itemsStats.two.tot(),
+                    },
+                    icon: "https://www.bungie.net/" + itemsDb[2].displayProperties.icon,
+                },
+                armorThree: {
+                    name: itemsDb[3].displayProperties.name + " - " + itemsDb[3].itemTypeDisplayName,
+                    stats: {
+                        all: items.itemsStats.three,
+                        tot: items.itemsStats.three.tot(),
+                    },
+                    icon: "https://www.bungie.net/" + itemsDb[3].displayProperties.icon,
+                },
             }
             return result;
         }
         if (items.canPurchase == false) {
-            var result = {
-                error: 0,
+            const result = {
                 canPurchase: false,
-                weapon: null,
-                armorOne: null,
-                armorTwo: null,
-                armorThree: null,
+                weapon: {
+                    name: null,
+                    type: null,
+                    icon: null,
+                },
+                armorOne: {
+                    name: null,
+                    stats: {
+                        all: null,
+                        tot: null,
+                    },
+                    icon: null,
+                },
+                armorTwo: {
+                    name: null,
+                    stats: {
+                        all: null,
+                        tot: null,
+                    },
+                    icon: null,
+                },
+                armorThree: {
+                    name: null,
+                    stats: {
+                        all: null,
+                        tot: null,
+                    },
+                    icon: null,
+                },
             }
             return result;
         }

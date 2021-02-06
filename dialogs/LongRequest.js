@@ -641,7 +641,212 @@ class LongRequest {
             });
             await adapter.continueConversation(conversationReference, async turnContext => {
                 if (item.canPurchase == true) {
-                    await turnContext.sendActivity("Qui ci va la stampa.");
+                    var card = {
+                        "type": "AdaptiveCard",
+                        "body": [
+                            {
+                                "type": "ColumnSet",
+                                "columns": [
+                                    {
+                                        "type": "Column",
+                                        "items": [
+                                            {
+                                                "type": "Image",
+                                                "url": item.weapon.icon,
+                                                "horizontalAlignment": "Center"
+                                            }
+                                        ],
+                                        "width": "auto"
+                                    },
+                                    {
+                                        "type": "Column",
+                                        "items": [
+                                            {
+                                                "type": "TextBlock",
+                                                "text": item.weapon.name,
+                                                "wrap": true,
+                                                "spacing": "None",
+                                                "fontType": "Default",
+                                                "size": "Large",
+                                                "weight": "Bolder",
+                                                "color": "Light"
+                                            },
+                                            {
+                                                "type": "TextBlock",
+                                                "text": item.weapon.type,
+                                                "wrap": true,
+                                                "color": "Light",
+                                                "spacing": "Small"
+                                            }
+                                        ],
+                                        "width": "stretch"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "ColumnSet",
+                                "columns": [
+                                    {
+                                        "type": "Column",
+                                        "items": [
+                                            {
+                                                "type": "Image",
+                                                "url": item.armorOne.icon,
+                                                "horizontalAlignment": "Center"
+                                            }
+                                        ],
+                                        "width": "auto"
+                                    },
+                                    {
+                                        "type": "Column",
+                                        "items": [
+                                            {
+                                                "type": "TextBlock",
+                                                "text": item.armorOne.name,
+                                                "spacing": "None",
+                                                "fontType": "Default",
+                                                "size": "Large",
+                                                "color": "Light",
+                                                "weight": "Bolder"
+                                            },
+                                            {
+                                                "type": "TextBlock",
+                                                "text": "Mobilità: " + item.armorOne.stats.all.mobilità + " - Resilienza: " + item.armorOne.stats.all.resilienza + " - Recupero: " + item.armorOne.stats.all.recupero,
+                                                "color": "Light",
+                                                "spacing": "Small",
+                                            },
+                                            {
+                                                "type": "TextBlock",
+                                                "text": "Disciplina: " + item.armorOne.stats.all.disciplina + " - Intelletto: " + item.armorOne.stats.all.intelletto + " - Forza: " + item.armorOne.stats.all.forza,
+                                                "color": "Light",
+                                                "spacing": "Small",
+                                            },
+                                            {
+                                                "type": "TextBlock",
+                                                "text": "Totale: " + item.armorOne.stats.tot,
+                                                "color": "Light",
+                                                "spacing": "Small",
+                                                "weight": "Bolder",
+                                                "size": "Medium"
+                                            }
+                                        ],
+                                        "width": "stretch"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "ColumnSet",
+                                "columns": [
+                                    {
+                                        "type": "Column",
+                                        "items": [
+                                            {
+                                                "type": "Image",
+                                                "url": item.armorTwo.icon,
+                                                "horizontalAlignment": "Center"
+                                            }
+                                        ],
+                                        "width": "auto"
+                                    },
+                                    {
+                                        "type": "Column",
+                                        "items": [
+                                            {
+                                                "type": "TextBlock",
+                                                "text": item.armorTwo.name,
+                                                "spacing": "None",
+                                                "fontType": "Default",
+                                                "size": "Large",
+                                                "color": "Light",
+                                                "weight": "Bolder"
+                                            },
+                                            {
+                                                "type": "TextBlock",
+                                                "text": "Mobilità: " + item.armorTwo.stats.all.mobilità + " - Resilienza: " + item.armorTwo.stats.all.resilienza + " - Recupero: " + item.armorTwo.stats.all.recupero,
+                                                "color": "Light",
+                                                "spacing": "Small",
+                                            },
+                                            {
+                                                "type": "TextBlock",
+                                                "text": "Disciplina: " + item.armorTwo.stats.all.disciplina + " - Intelletto: " + item.armorTwo.stats.all.intelletto + " - Forza: " + item.armorTwo.stats.all.forza,
+                                                "color": "Light",
+                                                "spacing": "Small",
+                                            },
+                                            {
+                                                "type": "TextBlock",
+                                                "text": "Totale: " + item.armorTwo.stats.tot,
+                                                "color": "Light",
+                                                "spacing": "Small",
+                                                "weight": "Bolder",
+                                                "size": "Medium"
+                                            }
+                                        ],
+                                        "width": "stretch"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "ColumnSet",
+                                "columns": [
+                                    {
+                                        "type": "Column",
+                                        "items": [
+                                            {
+                                                "type": "Image",
+                                                "url": item.armorThree.icon,
+                                                "horizontalAlignment": "Center"
+                                            }
+                                        ],
+                                        "width": "auto"
+                                    },
+                                    {
+                                        "type": "Column",
+                                        "items": [
+                                            {
+                                                "type": "TextBlock",
+                                                "text": item.armorThree.name,
+                                                "spacing": "None",
+                                                "fontType": "Default",
+                                                "size": "Large",
+                                                "color": "Light",
+                                                "weight": "Bolder"
+                                            },
+                                            {
+                                                "type": "TextBlock",
+                                                "text": "Mobilità: " + item.armorThree.stats.all.mobilità + " - Resilienza: " + item.armorThree.stats.all.resilienza + " - Recupero: " + item.armorThree.stats.all.recupero,
+                                                "color": "Light",
+                                                "spacing": "Small",
+                                            },
+                                            {
+                                                "type": "TextBlock",
+                                                "text": "Disciplina: " + item.armorThree.stats.all.disciplina + " - Intelletto: " + item.armorThree.stats.all.intelletto + " - Forza: " + item.armorThree.stats.all.forza,
+                                                "color": "Light",
+                                                "spacing": "Small",
+                                            },
+                                            {
+                                                "type": "TextBlock",
+                                                "text": "Totale: " + item.armorThree.stats.tot,
+                                                "color": "Light",
+                                                "spacing": "Small",
+                                                "weight": "Bolder",
+                                                "size": "Medium"
+                                            }
+                                        ],
+                                        "width": "stretch"
+                                    }
+                                ]
+                            }
+                        ],
+                        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                        "version": "1.0",
+                        "backgroundImage": {
+                            "url": "https://i.postimg.cc/43r31T11/card-Background.png"
+                        }
+                    }
+                    await turnContext.sendActivity({
+                        text: 'Ecco gli item venduti oggi da Xur:',
+                        attachments: [CardFactory.adaptiveCard(card)]
+                    });
                 }
                 if (item.canPurchase == false) {
                     await turnContext.sendActivity("Non sono riuscito a trovarlo, mi sa che è in ferie. Riprova nel week-end.");
