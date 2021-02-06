@@ -14,7 +14,6 @@ class DIBrecognizer {
     get isConfigured() {
         return (this.recognizer !== undefined);
     }
-
     /**
      * Returns an object with preformatted LUIS results for the bot's dialogs to consume.
      * @param {TurnContext} context

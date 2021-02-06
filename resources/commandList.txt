@@ -1,0 +1,3 @@
+logout - Disconnette il tuo account Bungie dal bot. 
+restart - Riavvia il bot dal messaggio di benvenuto.
+help - Mostrare le funzionalità disponibili.
