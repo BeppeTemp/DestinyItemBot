@@ -1,2 +1,0 @@
-migliorare l'upload del db (bulk)
-la cosa de loop
