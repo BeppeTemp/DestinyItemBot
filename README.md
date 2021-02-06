@@ -1,4 +1,4 @@
-# DestinyItemBot
+# DestinyVendorBot
 Questo bot permette di vedere l'inventario dell'armaiolo e di conoscere se l'oggetto in vendita è già nel tuo inventario, del ragno e di xur. 
 E' prevista prima una fase di login, dopodichè è possibile effettuare le query desiderate. 
 Sono prestivi anche alcuni comandi come /restart per restartare il bot, oppure /logout per vuoi uscire dal bot ed eliminare le tue credenziali d'accesso.
