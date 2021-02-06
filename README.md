@@ -22,6 +22,7 @@ Sono prestivi anche alcuni comandi come /restart per restartare il bot, oppure /
     ```bash
     npm install
     ```
+    
 - Install modules axios
 
    ```bash
@@ -29,6 +30,7 @@ Sono prestivi anche alcuni comandi come /restart per restartare il bot, oppure /
     ```
    
 - Install modules qs
+
    ```bash
     npm install qs
     ```
