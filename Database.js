@@ -27,8 +27,8 @@ async function main() {
 
   const client = new CosmosClient({ endpoint, key });
 
-  await client.database(databaseId).delete();
-  console.log("Database Eliminato \n");
+  //await client.database(databaseId).delete();
+  //console.log("Database Eliminato \n");
 
   const database = client.database(databaseId);
   const container = database.container(containerId);
@@ -43,11 +43,16 @@ async function main() {
 
     for(let i=0;i<Object.keys(Manifest).length;i++){
       var item = Manifest[Object.keys(Manifest)[i]];
-      item.id=Object.keys(Manifest)[i]
+      var nstr = Manifest[Object.keys(Manifest)[i]]["displayProperties"]["name"];
+      var str = nstr.replace(/\s/g, '');
+      str = str.toLowerCase();
+
+      item.id = Object.keys(Manifest)[i]
+      item.name = str;
 
       await container.items.create(item);
 
-      console.log("Item "+i+" caricato su "+ Object.keys(Manifest).length);
+      console.log(nstr+ " caricato sul database (Item "+i+" di "+ Object.keys(Manifest).length+")");
       if (i % 100 == 0){
         console.clear();
       }
