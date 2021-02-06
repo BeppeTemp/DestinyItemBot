@@ -33,12 +33,6 @@ Sono prestivi anche alcuni comandi come /restart per restartare il bot, oppure /
     npm install qs
     ```
     
-- Install modules qs
-   ```bash
-    npm install qs
-    ```
-    
-
 - Start the bot
 
     ```bash
