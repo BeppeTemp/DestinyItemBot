@@ -144,9 +144,7 @@ class MainDialog extends ComponentDialog {
         await this.userProfileAccessor.set(step.context, accessdata);
         const conversationData = await this.dialogState.get(step.context, {});
         conversationData.conversationReference = TurnContext.getConversationReference(step.context.activity);
-        if(step.context._activity.text.localeCompare("c") == 0){
-            return await step.beginDialog(MOVE_ITEM_DIALOG, accessdata);
-        }
+        
         if(step.context._activity.text.localeCompare("/restart") == 0){
             await this.welcomedUserProperty.set(step.context, false);
             await this.loginUser.set(step.context, false);
@@ -168,7 +166,9 @@ class MainDialog extends ComponentDialog {
         const reply = {
             type: ActivityTypes.Message
         };
+
         const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
+
         //Mostra l'invetraio dell'armaiolo
         if (LuisRecognizer.topIntent(luisResult) === 'GetGunsmith') {
             LongRequest.getGunsmithLong(this.br, accessdata, conversationData.conversationReference);
@@ -183,6 +183,14 @@ class MainDialog extends ComponentDialog {
         if (LuisRecognizer.topIntent(luisResult) === "GetXur") {
             LongRequest.getXurLong(this.br, accessdata, conversationData.conversationReference);
             await step.context.sendActivity("Sto cercando Xur nelle destinazioni, potrei chiedere ai Nove dove si trova.");
+        } 
+        //Spostamento di un item
+        if (LuisRecognizer.topIntent(luisResult) === "MoveItem") {
+            const data = {
+                accessdata: accessdata,
+                name: luisResult.entities.item[0]
+            }
+            return await step.beginDialog(MOVE_ITEM_DIALOG, data);
         }
         //Richiesta non supportata
         if (LuisRecognizer.topIntent(luisResult) === "None") {

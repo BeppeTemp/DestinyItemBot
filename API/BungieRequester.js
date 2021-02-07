@@ -5,6 +5,7 @@ const { CosmosClient } = require("@azure/cosmos");
 
 const path = require('path');
 const dotenv = require('dotenv');
+const { Console } = require("console");
 const ENV_FILE = path.join(__dirname, '../.env');
 dotenv.config({ path: ENV_FILE });
 
@@ -396,7 +397,7 @@ class BungieRequester {
         }
     }
 
-    //Ritorna gli item venduti da Xur
+    //Restituisce gli item venduti da Xur
     async getXur(accessdata, membershipType, character) {
         var membershipPlatformId = await this.getPlatformID(await accessdata.membership_id, membershipType);
         var characterId = await this.getCharacterId(await membershipPlatformId, membershipType, character);
@@ -563,13 +564,18 @@ class BungieRequester {
             endpoint: process.env.EndPoint,
             key: process.env.Key
         }
+        var result = {};
         const client = new CosmosClient(DbSettings);
         const database = client.database(process.env.DataBaseId);
         const container = database.container(process.env.ContainerId);
         const { resources: items } = await container.items.query(querySpec).fetchAll();
-        const result = {
-            id: items[0].id,
-            name: items[0].displayProperties.name
+        if (items.length > 0) {
+            result.id = items[0].id;
+            result.name = items[0].displayProperties.name
+
+        } else {
+            result.id = null;
+            result.name = null;
         }
         return result;
     }
@@ -588,8 +594,8 @@ class BungieRequester {
             }).catch(error => {
                 console.log(error.data);
             });
-        for (let i = 0; i < istances.vault.length; i++) {
-            istances.vault[i].power = info[istances.vault[i].itemInstanceId+""].primaryStat.value;
+        for (let i = 0; i < istances.items.length; i++) {
+            istances.items[i].power = info[istances.items[i].itemInstanceId + ""].primaryStat.value;
         }
         return istances;
     }
@@ -598,39 +604,45 @@ class BungieRequester {
     async getIstancesFromId(name, accessdata, membershipType) {
         const itemInfo = await this.getIdFromName(name);
         var membershipPlatformId = await this.getPlatformID(await accessdata.membership_id, membershipType);
-        const items = await axios.get(this.basePath + '/Destiny2/' + membershipType + '/' + 'Profile/' + membershipPlatformId + '/?components=102,201', {
+        var items = await axios.get(this.basePath + '/Destiny2/' + membershipType + '/' + 'Profile/' + membershipPlatformId + '/?components=102,201', {
             headers: {
                 "X-API-Key": this.apiKey,
                 "Authorization": accessdata.token_type + " " + accessdata.access_token,
             }
         })
             .then(result => {
-                const items = {
-                    vault: result.data.Response.profileInventory.data.items,
+                const items = {}
+                items[0] = result.data.Response.profileInventory.data.items;
+                const characterInventories = result.data.Response.characterInventories.data;
+
+                for (let i = 1; i <= Object.keys(characterInventories).length; i++) {
+                    items[i] = characterInventories[Object.keys(characterInventories)[i - 1]].items;
                 }
+
                 return items;
             }).catch(error => {
                 console.log(error.data);
             });
 
-        var istances = {
-            name: itemInfo.name,
-            vault: [],
-        }
-        for (let i = 0; i < items.vault.length; i++) {
-            if (items.vault[i]["itemHash"] == itemInfo.id) {
-                istances.vault.push(items.vault[i]);
+
+        var istances = {}
+        istances.name = itemInfo.name;
+        istances.items = [];
+
+        for (let i = 0; i < Object.keys(items).length; i++) {
+            for (let j = 0; j < items[Object.keys(items)[i]].length; j++) {
+                if (String(items[Object.keys(items)[i]][j]["itemHash"]).localeCompare(itemInfo.id) == 0) {
+                    items[Object.keys(items)[i]][j].position = i;
+                    istances.items.push(items[Object.keys(items)[i]][j]);
+                }
             }
         }
-        if (istances.length == 0) {
-            console.log("l'item non è presente nel tuo vault");
-        }
-        istances = this.getPower(istances, accessdata, membershipType);
-        return istances;
+        const inst = await this.getPower(istances, accessdata, membershipType);
+        return inst;
     }
 
     //Ottiene informazioni su personaggi
-    async getCharacters(accessdata, membershipType){
+    async getCharacters(accessdata, membershipType) {
         var membershipPlatformId = await this.getPlatformID(await accessdata.membership_id, membershipType);
         var characters = await axios.get(this.basePath + '/Destiny2/' + membershipType + '/Profile/' + membershipPlatformId + '/?components=200', {
             headers: {
@@ -641,54 +653,102 @@ class BungieRequester {
                 var info = result.data.Response.characters.data;
                 var characters = [];
 
-                for(var i=0; i<Object.keys(info).length; i++){
+                for (var i = 0; i < Object.keys(info).length; i++) {
                     var character = {}
                     character.id = info[Object.keys(info)[i]].characterId;
                     character.light = info[Object.keys(info)[i]].light;
 
-                    if(info[Object.keys(info)[i]].classHash == 2271682572){
+                    if (info[Object.keys(info)[i]].classHash == 2271682572) {
                         character.class = "Stregone";
                     }
-                    if(info[Object.keys(info)[i]].classHash == 3655393761){
+                    if (info[Object.keys(info)[i]].classHash == 3655393761) {
                         character.class = "Titano";
                     }
-                    if(info[Object.keys(info)[i]].classHash == 671679327){
+                    if (info[Object.keys(info)[i]].classHash == 671679327) {
                         character.class = "Cacciatore";
                     }
-                    characters[i]=character;
+                    characters[i] = character;
                 };
                 return characters;
             }).catch(error => {
                 console.log(error);
             });
-            return characters;
+        return characters;
     }
 
     //Sposta un item dal deposito a un personaggio
-    async moveItem(infoTransfer, vault, accessdata, membershipType) {
-        const characters = await this.getCharacters(accessdata ,membershipType);
-        const items = await this.getIstancesFromId(infoTransfer.name, accessdata ,membershipType);
+    async moveItem(infoTransfer, accessdata, membershipType) {
+        const characters = await this.getCharacters(accessdata, membershipType);
+        const items = await this.getIstancesFromId(infoTransfer.name, accessdata, membershipType);
 
-        const data = {
-            membershipType: membershipType,
-            itemReferenceHash: items.vault[infoTransfer.indexItem].itemHash,
-            itemId: items.vault[infoTransfer.indexItem].itemInstanceId,
-            characterId: characters[infoTransfer.indexCharacter].id,
-            stackSize: "1",
-            transferToVault: vault,
-        }
-        await axios.post(this.basePath + '/Destiny2/Actions/Items/TransferItem/', data, {
-            headers: {
-                "Authorization": accessdata.token_type + " " + accessdata.access_token,
-                "X-API-Key": this.apiKey
+        //Prima il true e poi il false
+
+        console.log(infoTransfer);
+        console.log(characters);
+        console.log(items);
+
+        if (items.items[infoTransfer.indexItem].position != 0) {
+            console.log("Spostamento da personaggio");
+            var data = {
+                membershipType: membershipType,
+                itemReferenceHash: items.items[infoTransfer.indexItem].itemHash,
+                itemId: items.items[infoTransfer.indexItem].itemInstanceId,
+                characterId: characters[items.items[infoTransfer.indexItem].position - 1].id,
+                stackSize: "1",
+                transferToVault: true,
             }
-        })
-            .then(result => {
-                console.log(result.data);
-                console.log("Trasferimento avvenuto con successo");
-            }).catch(error => {
-                console.log(error.response.data);
-            });
+            await axios.post(this.basePath + '/Destiny2/Actions/Items/TransferItem/', data, {
+                headers: {
+                    "Authorization": accessdata.token_type + " " + accessdata.access_token,
+                    "X-API-Key": this.apiKey
+                }
+            })
+                .then(result => {
+                    console.log(result.data);
+                }).catch(error => {
+                    console.log(error.response.data);
+                });
+            data = {
+                membershipType: membershipType,
+                itemReferenceHash: items.items[infoTransfer.indexItem].itemHash,
+                itemId: items.items[infoTransfer.indexItem].itemInstanceId,
+                characterId: characters[infoTransfer.indexCharacter].id,
+                stackSize: "1",
+                transferToVault: true,
+            }
+            await axios.post(this.basePath + '/Destiny2/Actions/Items/TransferItem/', data, {
+                headers: {
+                    "Authorization": accessdata.token_type + " " + accessdata.access_token,
+                    "X-API-Key": this.apiKey
+                }
+            })
+                .then(result => {
+                    console.log(result.data);
+                }).catch(error => {
+                    console.log(error.response.data);
+                });
+        } else {
+            console.log("Spostamento da deposito");
+            var data = {
+                membershipType: membershipType,
+                itemReferenceHash: items.items[infoTransfer.indexItem].itemHash,
+                itemId: items.items[infoTransfer.indexItem].itemInstanceId,
+                characterId: characters[infoTransfer.indexCharacter].id,
+                stackSize: "1",
+                transferToVault: false,
+            }
+            await axios.post(this.basePath + '/Destiny2/Actions/Items/TransferItem/', data, {
+                headers: {
+                    "Authorization": accessdata.token_type + " " + accessdata.access_token,
+                    "X-API-Key": this.apiKey
+                }
+            })
+                .then(result => {
+                    console.log(result.data);
+                }).catch(error => {
+                    console.log(error.response.data);
+                });
+        }
     }
 }
 module.exports.BungieRequester = BungieRequester;

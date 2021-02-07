@@ -1,16 +1,20 @@
-const { ComponentDialog,WaterfallDialog, ChoiceFactory, ChoicePrompt } = require('botbuilder-dialogs');
+const { ComponentDialog,WaterfallDialog, ChoiceFactory, ChoicePrompt, TextPrompt} = require('botbuilder-dialogs');
 const { BungieRequester } = require('../API/BungieRequester');
 
 const path = require('path');
 const dotenv = require('dotenv');
+const { isWorker } = require('cluster');
 const ENV_FILE = path.join(__dirname, '../.env');
 dotenv.config({ path: ENV_FILE });
 
 const CHOICE_PROMPT = 'CHOICE_PROMPT';
-const WATERFALL_DIALOG = 'waterfallDialog';
-const MOVE_ITEM_DIALOG = "moveItemDialog";
+const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
+const TEXT_PROMPT = 'TEXT_PROMPT';
 
-const PROPERTY ="property";
+const MOVE_ITEM_DIALOG = "moveItemDialog";
+const INFO_TRANSFER_PROPERTY = "infoTransferProperty";
+const ACCESS_DATA_PROPERTY = "accessDataProperty";
+const IS_NAME_WRONG = "isNameWrong";
 
 class MoveItemDialog extends ComponentDialog {
     constructor(userState) {
@@ -19,9 +23,12 @@ class MoveItemDialog extends ComponentDialog {
         this.userState = userState;
         this.br = new BungieRequester();
 
-        this.infoTransferProperty = userState.createProperty(PROPERTY);
+        this.infoTransferProperty = userState.createProperty(INFO_TRANSFER_PROPERTY);
+        this.accessdataProperty = userState.createProperty(ACCESS_DATA_PROPERTY);
+        this.isNameWrong = userState.createProperty(IS_NAME_WRONG);
 
         this.addDialog(new ChoicePrompt(CHOICE_PROMPT));
+        this.addDialog(new TextPrompt(TEXT_PROMPT))
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
             this.getNameItem.bind(this),
             this.selectionItem.bind(this),
@@ -34,24 +41,47 @@ class MoveItemDialog extends ComponentDialog {
 
     //Ottiene il nome dell'item da spostare
     async getNameItem(step){
-
+        var isWrong = await this.isNameWrong.get(step.context, false);
+        
+        if(isWrong){
+            return await step.prompt(TEXT_PROMPT, "Quale item vuoi spostare ? (/exit per annullare)");
+        }
+        return step.next();
     }
 
     //Seleziona quale item spostare in caso di doppioni
     async selectionItem(step) {
-        const accessdata = step.options;
-        const name = ("falcolunare");
+
+        const data = step.options;
+
+        var accessdata = await this.accessdataProperty.get(step.context, {});
+        accessdata = data.accessdata;
+        await this.accessdataProperty.set(step.context, accessdata);
+
+        var name;
+
+        if(await this.isNameWrong.get(step.context)){
+            name = step._info.result;
+        }else{
+            name = data.name;
+        }
+
+        if (name.localeCompare("/exit") == 0){
+            return await step.endDialog();
+        }
 
         const infoTransfer = await this.infoTransferProperty.get(step.context, {});
         infoTransfer.name = name;
         await this.infoTransferProperty.set(step.context, infoTransfer);
 
-        const items = await this.br.getIstancesFromId(name, accessdata ,process.env.MemberShipType);
-       
-        if (items.vault.length == 0){
-            console.log("non ho trova l'arma");
+        const istances = await this.br.getIstancesFromId(name, accessdata ,process.env.MemberShipType);
+
+        if (istances.items.length == 0){
+            await this.isNameWrong.set(step.context, true);
+            await step.context.sendActivity("Item inserito non trovato. Assicurati di aver inserito un item che effettivamente possiedi e di averlo digitato correttamente.");
+            return await step.replaceDialog(this.id, data);
         }
-        if (items.vault.length == 1){
+        if (istances.items.length == 1){
             const infoTransfer = await this.infoTransferProperty.get(step.context, {});
             infoTransfer.indexItem = 0;
             await this.infoTransferProperty.set(step.context, infoTransfer);
@@ -59,8 +89,8 @@ class MoveItemDialog extends ComponentDialog {
         }
 
         const choices = [];
-        for(let i=0;i<items.vault.length;i++){
-            const choice = items.name + " (" + items.vault[i].power + ")";
+        for(let i=0;i<istances.items.length;i++){
+            const choice = istances.name + " (" + istances.items[i].power + ")";
             choices.push(choice);
         }
         return await step.prompt(CHOICE_PROMPT, {
@@ -71,13 +101,14 @@ class MoveItemDialog extends ComponentDialog {
 
     //Seleziona su quale personaggio spostare l'item
     async selectionCharacter(step) {
+        var accessdata = await this.accessdataProperty.get(step.context, {});
+
         const infoTransfer = await this.infoTransferProperty.get(step.context, {});
         if(infoTransfer.indexItem != 0){
-            infoTransfer.indexItem = step.result.index;
+            infoTransfer.indexItem = step._info.result.index;
         }
         await this.infoTransferProperty.set(step.context, infoTransfer);
 
-        const accessdata = step.options;
         const characters = await this.br.getCharacters(accessdata ,process.env.MemberShipType);
         const choices = [];
 
@@ -92,13 +123,15 @@ class MoveItemDialog extends ComponentDialog {
 
     //Effettura lo spostamento dell'item
     async moveItem(step) {
+
+        var accessdata = await this.accessdataProperty.get(step.context, {});
         const infoTransfer = await this.infoTransferProperty.get(step.context, {});
-        infoTransfer.indexCharacter = step.result.index;
+        infoTransfer.indexCharacter = step._info.result.index;
         await this.infoTransferProperty.set(step.context, infoTransfer);
 
-        const accessdata = step.options;
-        await this.br.moveItem(infoTransfer, false, accessdata, process.env.membershipType)
+        await this.br.moveItem(infoTransfer, accessdata, process.env.membershipType);
 
+        await this.isNameWrong.set(step.context, false);
         return await step.endDialog();
     }
 }
