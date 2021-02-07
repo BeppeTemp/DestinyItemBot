@@ -3,6 +3,7 @@ const { TextPrompt, ComponentDialog, DialogSet, DialogTurnStatus, WaterfallDialo
 const { LuisRecognizer } = require('botbuilder-ai');
 const { BungieRequester } = require('../API/BungieRequester');
 const { LongRequest } = require('../dialogs/LongRequest');
+const { MoveItemDialog, MOVE_ITEM_DIALOG } = require("./MoveItemDialog");
 
 const path = require('path');
 const dotenv = require('dotenv');
@@ -35,6 +36,7 @@ class MainDialog extends ComponentDialog {
         this.welcomedUserProperty = userState.createProperty(WELCOMED_USER);
 
         //Used dialogs
+        this.addDialog(new MoveItemDialog(userState));
         this.addDialog(new TextPrompt(TEXT_PROMPT))
             .addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
                 this.welcomeStep.bind(this),
@@ -124,25 +126,27 @@ class MainDialog extends ComponentDialog {
             await this.userProfileAccessor.set(step.context, accessdata);
             const name = await this.br.getName(accessdata.membership_id, process.env.MemberShipType);
             await this.loginUser.set(step.context, true);
-            return await step.prompt(TEXT_PROMPT, "Codice di accesso ottenuto, salve " + name + ". Come posso aiutarti ?");
+            await step.context.sendActivity("Codice di accesso ottenuto, salve " + name + ".");
         }
-        return step.next();
+        return await step.prompt(TEXT_PROMPT, "Come posso aiutarti ?");
     }
 
     // Forwards to the correct dialog based on the menu option or the intent recognized by LUIS
     async ChooseAction(step) {
-        var accessdata = await this.userProfileAccessor.get(step.context, {});
-        await this.br.moveItem(accessdata, process.env.MemberShipType, process.env.Character);
+        var accessdata = await this.userProfileAccessor.get(step.context, {});     
         accessdata = await this.br.refreshAccessData(accessdata.refresh_token);
         //Controllo scadenza refresh token
         if (accessdata.error == 1){
-            step.context.sendActivity("Codice di accesso scaduto, è necessario rieseguire l'accesso.");
+            await step.context.sendActivity("Codice di accesso scaduto, è necessario rieseguire l'accesso.");
             await this.loginUser.set(step.context, false);
             return step.next();
         }
         await this.userProfileAccessor.set(step.context, accessdata);
         const conversationData = await this.dialogState.get(step.context, {});
         conversationData.conversationReference = TurnContext.getConversationReference(step.context.activity);
+        if(step.context._activity.text.localeCompare("c") == 0){
+            return await step.beginDialog(MOVE_ITEM_DIALOG, accessdata);
+        }
         if(step.context._activity.text.localeCompare("/restart") == 0){
             await this.welcomedUserProperty.set(step.context, false);
             await this.loginUser.set(step.context, false);
@@ -153,13 +157,13 @@ class MainDialog extends ComponentDialog {
             return await step.next();
         }
         if(step.context._activity.text.localeCompare("/help") == 0){
-            step.context.sendActivity("Il DestinyVendorBot ti permette di effettuare diverse operazioni inviando comandi in linguaggio naturale: \n\n \n\n" + 
+            await step.context.sendActivity("Il DestinyVendorBot ti permette di effettuare diverse operazioni inviando comandi in linguaggio naturale: \n\n \n\n" + 
             "Mostrare l'inventario dell'armaiolo: \"Mostrami cosa vende l'armaiolo\",\"Mostrami coda vende Banshee\",\"Armaiolo\" \n\n" +
             "Mostrare l'inventario del ragno: \"Mostrami cosa vende il Ragno\",\"Ragno\" \n\n" +
             "Mostrare l'inventario di Xur (Disponibile solo dal Venerdi (18 ora solare, 19 ora legale) al Martedi (18 ora solare, 19 ora legale)): \"Mostrami cosa vende Xur\",\"Xur\" \n\n" +
             "\n\n \n\n" +
             "Il bot implementa anche l'utilizzo di alcuni comandi che è possibile richiamare scrivendo \"/\", in questo modo verrà mostrato l'elenco dei comandi e una breve descrizione degli stessi.");
-            return await step.prompt(TEXT_PROMPT, "Come posso aiutarti ?");
+            return step.next();
         }
         const reply = {
             type: ActivityTypes.Message
@@ -168,24 +172,23 @@ class MainDialog extends ComponentDialog {
         //Mostra l'invetraio dell'armaiolo
         if (LuisRecognizer.topIntent(luisResult) === 'GetGunsmith') {
             LongRequest.getGunsmithLong(this.br, accessdata, conversationData.conversationReference);
-            return await step.prompt(TEXT_PROMPT, "Sto contattando Banshee-44 alla Torre, probabilmente ha dimenticato dove ha lasciato la radio. Posso fare qualcos'altro nel frattempo per te ?");
+            await step.context.sendActivity("Sto contattando Banshee-44 alla Torre, probabilmente ha dimenticato dove ha lasciato la radio.");
         }
         //Mostra l'invetraio del ragno
         if (LuisRecognizer.topIntent(luisResult) === "GetSpider") {
             LongRequest.getSpiderLong(this.br, accessdata, conversationData.conversationReference);
-            return await step.prompt(TEXT_PROMPT, "Sto contattando il Ragno sulla Riva, probabilmente è impegnato a ricattare qualcuno. Posso fare qualcos'altro nel frattempo per te ?");
+            await step.context.sendActivity("Sto contattando il Ragno sulla Riva, probabilmente è impegnato a ricattare qualcuno.");
         }
         //Mostra l'invetraio di Xur
         if (LuisRecognizer.topIntent(luisResult) === "GetXur") {
             LongRequest.getXurLong(this.br, accessdata, conversationData.conversationReference);
-            return await step.prompt(TEXT_PROMPT, "Sto cercando Xur nelle destinazioni, potrei chiedere ai Nove dove si trova. Posso fare qualcos'altro nel frattempo per te ?");
+            await step.context.sendActivity("Sto cercando Xur nelle destinazioni, potrei chiedere ai Nove dove si trova.");
         }
         //Richiesta non supportata
         if (LuisRecognizer.topIntent(luisResult) === "None") {
-            reply.text = "Mi dispiace ma non sono in grado di aiutarti.";
-            await step.context.sendActivity(reply)
-            return await step.prompt(TEXT_PROMPT, "Chiedimi qualcos'altro.");
+            await step.context.sendActivity("Mi dispiace ma non sono in grado di aiutarti.");
         }
+        return await step.next();
     }
     
     //Fa un loop

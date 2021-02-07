@@ -10,6 +10,7 @@ dotenv.config({ path: ENV_FILE });
 const { DestinyVendorBot } = require('./bots/DestinyVendorBot');
 // Import main dialog
 const { MainDialog } = require('./dialogs/mainDialog');
+const { MoveItemDialog } = require('./dialogs/MoveItemDialog');
 // Import LUIS
 const { DIBrecognizer } = require('./cognitiveModels/DIBrecognizer');
 
