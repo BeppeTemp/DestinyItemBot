@@ -3,6 +3,9 @@ const qs = require("qs");
 var fs = require('fs');
 const { CosmosClient } = require("@azure/cosmos");
 
+const { promisify } = require('util')
+const sleep = promisify(setTimeout)
+
 const path = require('path');
 const dotenv = require('dotenv');
 const { Console } = require("console");
@@ -708,6 +711,9 @@ class BungieRequester {
                 }).catch(error => {
                     console.log(error.response.data);
                 });
+
+            await sleep(parseInt(process.env.TimeOne) * 5000).then(() => { })
+
             data = {
                 membershipType: membershipType,
                 itemReferenceHash: items.items[infoTransfer.indexItem].itemHash,
