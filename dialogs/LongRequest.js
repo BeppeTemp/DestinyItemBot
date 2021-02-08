@@ -130,7 +130,6 @@ class LongRequest {
                 });
             });
         } catch (error) {
-            //console.log('Bad Request. Please ensure your message contains the conversation reference and message text.');
             console.log(error);
         }
     }
@@ -624,7 +623,6 @@ class LongRequest {
                 });
             });
         } catch (error) {
-            //console.log('Bad Request. Please ensure your message contains the conversation reference and message text.');
             console.log(error);
         }
     }
@@ -853,7 +851,6 @@ class LongRequest {
                 }
             });
         } catch (error) {
-            //console.log('Bad Request. Please ensure your message contains the conversation reference and message text.');
             console.log(error);
         }
     }
@@ -872,12 +869,11 @@ class LongRequest {
                 if(status.error == 0){
                     await turnContext.sendActivity("✅ Il trasferimento che avevi richiesto è stato completato con successo.");
                 }else{
-                    await turnContext.sendActivity("❌ Il trasferimento che avevi richiesto è fallito. Riprova, se il problema persiste constatta uno sviluppatore.");
+                    await turnContext.sendActivity("❌ Il trasferimento che avevi richiesto è fallito. Riprova assicurandoti di non aver richiesto il trasferimento di un item equipaggiato su un PG attivo in game, se il problema persiste constatta uno sviluppatore.");
                 } 
 
             });
         } catch (error) {
-            //console.log('Bad Request. Please ensure your message contains the conversation reference and message text.');
             console.log(error);
         }
     }

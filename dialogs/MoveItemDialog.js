@@ -48,7 +48,7 @@ class MoveItemDialog extends ComponentDialog {
         var isWrong = await this.isNameWrong.get(step.context, false);
         
         if(isWrong){
-            return await step.prompt(TEXT_PROMPT, "A quale item ti riferivi ? Assicurati di inserire soltanto il nome del item oppure scrivi /exit per annullare ed uscire dalla modalità trasferimento.");
+            return await step.prompt(TEXT_PROMPT, "⚠️ Item richiesto non trovato. Scrivi solo il nome di un item che effettivamente possiedi per riprovare e assicurati di digitarlo correttamente. Se invece vuoi annullare la richiesta, scrivi /exit.");
         }
         return step.next();
     }
@@ -83,7 +83,6 @@ class MoveItemDialog extends ComponentDialog {
 
         if (istances.items.length == 0){
             await this.isNameWrong.set(step.context, true);
-            await step.context.sendActivity("⚠️ Item inserito non trovato. Assicurati di aver inserito un item che effettivamente possiedi e di averlo digitato correttamente.");
             return await step.replaceDialog(this.id, data);
         }
         if (istances.items.length == 1){
@@ -98,6 +97,7 @@ class MoveItemDialog extends ComponentDialog {
             const choice = istances.name + " " + istances.items[i].power +" 🕯";
             choices.push(choice);
         }
+        choices.push("Annulla 🛑");
         return await step.prompt(CHOICE_PROMPT, {
             prompt: 'Seleziona l\'item da trasferire:',
             choices: ChoiceFactory.toChoices(choices)
@@ -110,6 +110,10 @@ class MoveItemDialog extends ComponentDialog {
 
         const infoTransfer = await this.infoTransferProperty.get(step.context, {});
         if(infoTransfer.indexItem != 0){
+            if(step._info.result.value.localeCompare("Annulla 🛑") == 0){
+                await step.context.sendActivity("Sei uscito dalla modalità trasferimento item 👋.");
+                return await step.endDialog();
+            }
             infoTransfer.indexItem = step._info.result.index;
         }
         await this.infoTransferProperty.set(step.context, infoTransfer);
@@ -120,6 +124,7 @@ class MoveItemDialog extends ComponentDialog {
         for(let i=0;i<characters.length;i++){
             choices.push(characters[i].class + " " + String(characters[i].light)+" 🕯");
         }
+        choices.push("Annulla 🛑");
         return await step.prompt(CHOICE_PROMPT, {
             prompt: 'Seleziona il personaggio a cui vuoi trasferire l\'item:',
             choices: ChoiceFactory.toChoices(choices)
@@ -128,6 +133,11 @@ class MoveItemDialog extends ComponentDialog {
 
     //Effettura lo spostamento dell'item
     async moveItem(step) {
+        if(step._info.result.value.localeCompare("Annulla 🛑") == 0){
+            await step.context.sendActivity("Sei uscito dalla modalità trasferimento item 👋.");
+            return await step.endDialog();
+        }
+
         const conversationData = await this.dialogState.get(step.context, {});
         conversationData.conversationReference = TurnContext.getConversationReference(step.context.activity);
 
