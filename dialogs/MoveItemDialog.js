@@ -137,7 +137,8 @@ class MoveItemDialog extends ComponentDialog {
         await this.infoTransferProperty.set(step.context, infoTransfer);
 
         LongRequest.moveItemLong(this.br, infoTransfer, accessdata, conversationData.conversationReference);
-        await step.context.sendActivity("Ho avviato lo spostamento del'item da te richiesto, ti invierò una notifica appena avro terminato l'operazione 😎.");
+        
+        await step.context.sendActivity("Ho avviato lo spostamento del'item da te richiesto, ti invierò una notifica appena avrò terminato l'operazione 😎.");
         await step.context.sendActivity("Sei uscito dalla modalità trasferimento item 👋.");
         await this.isNameWrong.set(step.context, false);
         return await step.endDialog();
