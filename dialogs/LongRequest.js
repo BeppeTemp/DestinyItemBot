@@ -125,7 +125,7 @@ class LongRequest {
                     }
                 }
                 await turnContext.sendActivity({
-                    text: 'Ecco le mod vendute oggi da Banshee-44:',
+                    text: 'Ecco le mod vendute oggi da Banshee-44 😎:',
                     attachments: [CardFactory.adaptiveCard(card)]
                 });
             });
@@ -619,7 +619,7 @@ class LongRequest {
                     }
                 }
                 await turnContext.sendActivity({
-                    text: 'Ecco i materiali venduti oggi dal Ragno:',
+                    text: 'Ecco i materiali venduti oggi dal Ragno 😎:',
                     attachments: [CardFactory.adaptiveCard(card)]
                 });
             });
@@ -844,13 +844,37 @@ class LongRequest {
                         }
                     }
                     await turnContext.sendActivity({
-                        text: 'Ecco gli item venduti oggi da Xur:',
+                        text: 'Ecco gli item venduti oggi da Xur 😎:',
                         attachments: [CardFactory.adaptiveCard(card)]
                     });
                 }
                 if (item.canPurchase == false) {
-                    await turnContext.sendActivity("Non sono riuscito a trovarlo, mi sa che è in ferie. Riprova nel week-end.");
+                    await turnContext.sendActivity("Non sono riuscito a trovarlo, mi sa che è in ferie 🤷🏻‍♂️. Riprova nel week-end.");
                 }
+            });
+        } catch (error) {
+            //console.log('Bad Request. Please ensure your message contains the conversation reference and message text.');
+            console.log(error);
+        }
+    }
+    //Avvia lo spostamento di un arma
+    static async moveItemLong(br, infoTransfer, accessdata, conversationReference) {
+        const status = await br.moveItem(infoTransfer, accessdata, process.env.membershipType);
+        // Set up the adapter and send the message
+        try {
+            const adapter = new BotFrameworkAdapter({
+                appId: process.env.microsoftAppID,
+                appPassword: process.env.microsoftAppPassword,
+                channelService: process.env.ChannelService,
+                openIdMetadata: process.env.BotOpenIdMetadata
+            });
+            await adapter.continueConversation(conversationReference, async turnContext => {
+                if(status.error == 0){
+                    await turnContext.sendActivity("✅ Il trasferimento che avevi richiesto è stato completato con successo.");
+                }else{
+                    await turnContext.sendActivity("❌ Il trasferimento che avevi richiesto è fallito. Riprova, se il problema persiste constatta uno sviluppatore.");
+                } 
+
             });
         } catch (error) {
             //console.log('Bad Request. Please ensure your message contains the conversation reference and message text.');

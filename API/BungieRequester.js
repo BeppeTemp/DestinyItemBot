@@ -1,6 +1,9 @@
 const axios = require("axios");
 const qs = require("qs");
 const { CosmosClient } = require("@azure/cosmos");
+const { promisify } = require('util')
+const sleep = promisify(setTimeout)
+
 
 const path = require('path');
 const dotenv = require('dotenv');
@@ -395,7 +398,7 @@ class BungieRequester {
         }
     }
 
-    //Ritorna gli item venduti da Xur
+    //Restituisce gli item venduti da Xur
     async getXur(accessdata, membershipType, character) {
         var membershipPlatformId = await this.getPlatformID(await accessdata.membership_id, membershipType);
         var characterId = await this.getCharacterId(await membershipPlatformId, membershipType, character);
@@ -550,6 +553,215 @@ class BungieRequester {
                 },
             }
             return result;
+        }
+    }
+
+    //Dato il nome di un item ne ritorna l'id
+    async getIdFromName(name) {
+        var itemname = name.replace(/\s/g, "");
+        itemname = itemname.toLowerCase();
+        const querySpec = { query: "SELECT * from c WHERE c.name=\"" + itemname + "\"" };
+        const DbSettings = {
+            endpoint: process.env.EndPoint,
+            key: process.env.Key
+        }
+        var result = {};
+        const client = new CosmosClient(DbSettings);
+        const database = client.database(process.env.DataBaseId);
+        const container = database.container(process.env.ContainerId);
+        const { resources: items } = await container.items.query(querySpec).fetchAll();
+        if (items.length > 0) {
+            result.id = items[0].id;
+            result.name = items[0].displayProperties.name
+
+        } else {
+            result.id = null;
+            result.name = null;
+        }
+        return result;
+    }
+
+    //Recupera i valori di potere degli item posseduti
+    async getPower(istances, accessdata, membershipType) {
+        var membershipPlatformId = await this.getPlatformID(await accessdata.membership_id, membershipType);
+        const info = await axios.get(this.basePath + '/Destiny2/' + membershipType + '/' + 'Profile/' + membershipPlatformId + '/?components=102,201,300', {
+            headers: {
+                "X-API-Key": this.apiKey,
+                "Authorization": accessdata.token_type + " " + accessdata.access_token,
+            }
+        })
+            .then(result => {
+                return result.data.Response.itemComponents.instances.data;
+            }).catch(error => {
+                console.log(error.data);
+            });
+        for (let i = 0; i < istances.items.length; i++) {
+            istances.items[i].power = info[istances.items[i].itemInstanceId + ""].primaryStat.value;
+        }
+        return istances;
+    }
+
+    //Dato un id cerca le corrispondenze nell'inventario del giocatore
+    async getIstancesFromId(name, accessdata, membershipType) {
+        const itemInfo = await this.getIdFromName(name);
+        var membershipPlatformId = await this.getPlatformID(await accessdata.membership_id, membershipType);
+        var items = await axios.get(this.basePath + '/Destiny2/' + membershipType + '/' + 'Profile/' + membershipPlatformId + '/?components=102,201', {
+            headers: {
+                "X-API-Key": this.apiKey,
+                "Authorization": accessdata.token_type + " " + accessdata.access_token,
+            }
+        })
+            .then(result => {
+                const items = {}
+                items[0] = result.data.Response.profileInventory.data.items;
+                const characterInventories = result.data.Response.characterInventories.data;
+
+                for (let i = 1; i <= Object.keys(characterInventories).length; i++) {
+                    items[i] = characterInventories[Object.keys(characterInventories)[i - 1]].items;
+                }
+
+                return items;
+            }).catch(error => {
+                console.log(error.data);
+            });
+
+
+        var istances = {}
+        istances.name = itemInfo.name;
+        istances.items = [];
+
+        for (let i = 0; i < Object.keys(items).length; i++) {
+            for (let j = 0; j < items[Object.keys(items)[i]].length; j++) {
+                if (String(items[Object.keys(items)[i]][j]["itemHash"]).localeCompare(itemInfo.id) == 0) {
+                    items[Object.keys(items)[i]][j].position = i;
+                    istances.items.push(items[Object.keys(items)[i]][j]);
+                }
+            }
+        }
+        const inst = await this.getPower(istances, accessdata, membershipType);
+        return inst;
+    }
+
+    //Ottiene informazioni su personaggi
+    async getCharacters(accessdata, membershipType) {
+        var membershipPlatformId = await this.getPlatformID(await accessdata.membership_id, membershipType);
+        var characters = await axios.get(this.basePath + '/Destiny2/' + membershipType + '/Profile/' + membershipPlatformId + '/?components=200', {
+            headers: {
+                "X-API-Key": this.apiKey
+            }
+        })
+            .then(result => {
+                var info = result.data.Response.characters.data;
+                var characters = [];
+
+                for (var i = 0; i < Object.keys(info).length; i++) {
+                    var character = {}
+                    character.id = info[Object.keys(info)[i]].characterId;
+                    character.light = info[Object.keys(info)[i]].light;
+
+                    if (info[Object.keys(info)[i]].classHash == 2271682572) {
+                        character.class = "Stregone";
+                    }
+                    if (info[Object.keys(info)[i]].classHash == 3655393761) {
+                        character.class = "Titano";
+                    }
+                    if (info[Object.keys(info)[i]].classHash == 671679327) {
+                        character.class = "Cacciatore";
+                    }
+                    characters[i] = character;
+                };
+                return characters;
+            }).catch(error => {
+                console.log(error);
+            });
+        return characters;
+    }
+
+    //Sposta un item dal deposito a un personaggio
+    async moveItem(infoTransfer, accessdata, membershipType) {
+        const characters = await this.getCharacters(accessdata, membershipType);
+        const items = await this.getIstancesFromId(infoTransfer.name, accessdata, membershipType);
+
+        var status = {};
+
+        if (items.items[infoTransfer.indexItem].position != 0) {
+            console.log("--- Spostamento da personaggio a personaggio avviato.");
+            console.log("Spostamento verso il vault.")
+            var data = {
+                membershipType: membershipType,
+                itemReferenceHash: items.items[infoTransfer.indexItem].itemHash,
+                itemId: items.items[infoTransfer.indexItem].itemInstanceId,
+                characterId: characters[items.items[infoTransfer.indexItem].position - 1].id,
+                stackSize: "1",
+                transferToVault: true,
+            }
+            await axios.post(this.basePath + '/Destiny2/Actions/Items/TransferItem/', data, {
+                headers: {
+                    "Authorization": accessdata.token_type + " " + accessdata.access_token,
+                    "X-API-Key": this.apiKey
+                }
+            })
+                .then(result => {
+                    console.log("Spostamento verso il vault completato con successo.");
+                }).catch(error => {
+                    console.log("Spostamento verso il vault fallito.")
+                    console.log(error.response.data);
+                });
+
+            data.transferToVault = false;
+            data.characterId = characters[infoTransfer.indexCharacter].id;
+
+            await sleep(process.env.MoveRefreshTime + 1000);
+
+            status = await axios.post(this.basePath + '/Destiny2/Actions/Items/TransferItem/', data, {
+                headers: {
+                    "Authorization": accessdata.token_type + " " + accessdata.access_token,
+                    "X-API-Key": this.apiKey
+                }
+            })
+                .then(result => {
+                    var status = {};
+                    status.error = 0;
+                    console.log("Spostamento verso il personaggio completato con successo.");
+                    return status;
+                }).catch(error => {
+                    var status = {};
+                    status.error = 1;
+                    console.log("Spostamento verso il personaggio fallito.")
+                    console.log(error.response.data);
+                    return status;
+                });
+            return status;
+
+        } else {
+            console.log("--- Spostamento da vault a personaggio avviato.");
+            var data = {
+                membershipType: membershipType,
+                itemReferenceHash: items.items[infoTransfer.indexItem].itemHash,
+                itemId: items.items[infoTransfer.indexItem].itemInstanceId,
+                characterId: characters[infoTransfer.indexCharacter].id,
+                stackSize: "1",
+                transferToVault: false,
+            }
+            status = await axios.post(this.basePath + '/Destiny2/Actions/Items/TransferItem/', data, {
+                headers: {
+                    "Authorization": accessdata.token_type + " " + accessdata.access_token,
+                    "X-API-Key": this.apiKey
+                }
+            })
+                .then(result => {
+                    var status = {};
+                    status.error = 0;
+                    console.log("Spostamento da vault a personaggio completato con successo.");
+                    return status;
+                }).catch(error => {
+                    var status = {};
+                    status.error = 1;
+                    console.log("Spostamento da vault a personaggio fallito.")
+                    console.log(error.response.data);
+                    return status;
+                });
+            return status;
         }
     }
 }

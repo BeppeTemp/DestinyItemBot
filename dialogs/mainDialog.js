@@ -3,6 +3,7 @@ const { TextPrompt, ComponentDialog, DialogSet, DialogTurnStatus, WaterfallDialo
 const { LuisRecognizer } = require('botbuilder-ai');
 const { BungieRequester } = require('../API/BungieRequester');
 const { LongRequest } = require('../dialogs/LongRequest');
+const { MoveItemDialog, MOVE_ITEM_DIALOG } = require("./MoveItemDialog");
 
 const path = require('path');
 const dotenv = require('dotenv');
@@ -35,6 +36,7 @@ class MainDialog extends ComponentDialog {
         this.welcomedUserProperty = userState.createProperty(WELCOMED_USER);
 
         //Used dialogs
+        this.addDialog(new MoveItemDialog(userState));
         this.addDialog(new TextPrompt(TEXT_PROMPT))
             .addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
                 this.welcomeStep.bind(this),
@@ -67,13 +69,13 @@ class MainDialog extends ComponentDialog {
         const didBotWelcomedUser = await this.welcomedUserProperty.get(step.context, false);
         if (didBotWelcomedUser === false) {
             var card = CardFactory.thumbnailCard(
-                'Salve Guardiano/a ! Sono il DestinyVendorBot.',
+                'Salve Guardiano/a ! Sono il DestinyVendorBot. 🤖',
                 [{
                     url: "https://i.postimg.cc/cHpnVgGg/bunshee.png"
                 }],
                 [],
                 {
-                    text: 'Puoi chiedermi di mostrarti gli inventari di tre dei nostri amici vendor: Banshee-44, Xur e il ragno (Zavala non ci ha dato abbastanza fondi). Che la luce del Viaggiatore sia con te. \n\nScrivi /help per visualizzare tutte le funzionalità.',
+                    text: 'Puoi chiedermi di spostare item tra i tuoi personaggi e mostrare gli inventari di tre dei nostri amici vendor preferiti: Banshee-44, Xur e il ragno (Zavala non ci ha dato abbastanza fondi 🥺). Prima di tutto è necessario eseguire il login al tuo account Bungie. Che la luce del Viaggiatore sia con te ❤️.',
                 }
             );
             reply.attachments = [card];
@@ -91,7 +93,7 @@ class MainDialog extends ComponentDialog {
         const didLoginUser = await this.loginUser.get(step.context, false);
         if (didLoginUser === false) {
             var card = CardFactory.thumbnailCard(
-                'Login richiesto !',
+                '⚠️ Login richiesto ! ⚠️',
                 [],
                 [{
                     type: 'openUrl',
@@ -100,12 +102,12 @@ class MainDialog extends ComponentDialog {
 
                 }],
                 {
-                    text: 'Premi sul bottone per ottenere il tuo codice di login ed autenticarti nel bot.',
+                    text: 'Premi sul pulsante per ottenere il codice di accesso e autenticarti nel bot.',
                 }
             );
             reply.attachments = [card];
             await step.context.sendActivity(reply)
-            return await step.prompt(TEXT_PROMPT, 'Inserisci il codice di login ottenuto dalla pagina di Bungie.');
+            return await step.prompt(TEXT_PROMPT, 'Inserisci il codice di login ottenuto dalla pagina di Bungie: ');
         }else{
             return step.next();
         }
@@ -124,24 +126,39 @@ class MainDialog extends ComponentDialog {
             await this.userProfileAccessor.set(step.context, accessdata);
             const name = await this.br.getName(accessdata.membership_id, process.env.MemberShipType);
             await this.loginUser.set(step.context, true);
-            return await step.prompt(TEXT_PROMPT, "Codice di accesso ottenuto, salve " + name + ". Come posso aiutarti ?");
+            var message = {
+                "channelData": [
+                    {
+                        "method": "sendMessage",
+                        "parameters": {
+                            "text": "✅  Codice di accesso ottenuto, salve " + name + ".\n\n❓ Scrivi /help per una panoramica delle funzionalità del bot.",
+                            "parse_mode": "HTML"
+                        }
+                    }
+                ]
+            }
+            await step.context.sendActivity(message);
         }
-        return step.next();
+        return await step.prompt(TEXT_PROMPT, "Come posso aiutarti ?");
     }
 
     // Forwards to the correct dialog based on the menu option or the intent recognized by LUIS
     async ChooseAction(step) {
-        var accessdata = await this.userProfileAccessor.get(step.context, {});
+        const reply = {
+            type: ActivityTypes.Message
+        };
+        var accessdata = await this.userProfileAccessor.get(step.context, {});     
         accessdata = await this.br.refreshAccessData(accessdata.refresh_token);
         //Controllo scadenza refresh token
         if (accessdata.error == 1){
-            step.context.sendActivity("Codice di accesso scaduto, è necessario rieseguire l'accesso.");
+            await step.context.sendActivity("🆘 Codice di accesso scaduto, è necessario rieseguire l'accesso.");
             await this.loginUser.set(step.context, false);
             return step.next();
         }
         await this.userProfileAccessor.set(step.context, accessdata);
         const conversationData = await this.dialogState.get(step.context, {});
         conversationData.conversationReference = TurnContext.getConversationReference(step.context.activity);
+        
         if(step.context._activity.text.localeCompare("/restart") == 0){
             await this.welcomedUserProperty.set(step.context, false);
             await this.loginUser.set(step.context, false);
@@ -152,39 +169,57 @@ class MainDialog extends ComponentDialog {
             return await step.next();
         }
         if(step.context._activity.text.localeCompare("/help") == 0){
-            step.context.sendActivity("Il DestinyVendorBot ti permette di effettuare diverse operazioni inviando comandi in linguaggio naturale: \n\n \n\n" + 
-            "Mostrare l'inventario dell'armaiolo: \"Mostrami cosa vende l'armaiolo\",\"Mostrami coda vende Banshee\",\"Armaiolo\" \n\n" +
-            "Mostrare l'inventario del ragno: \"Mostrami cosa vende il Ragno\",\"Ragno\" \n\n" +
-            "Mostrare l'inventario di Xur (Disponibile solo dal Venerdi (18 ora solare, 19 ora legale) al Martedi (18 ora solare, 19 ora legale)): \"Mostrami cosa vende Xur\",\"Xur\" \n\n" +
-            "\n\n \n\n" +
-            "Il bot implementa anche l'utilizzo di alcuni comandi che è possibile richiamare scrivendo \"/\", in questo modo verrà mostrato l'elenco dei comandi e una breve descrizione degli stessi.");
-            return await step.prompt(TEXT_PROMPT, "Come posso aiutarti ?");
+
+            var message = {
+                "channelData": [
+                    {
+                        "method": "sendMessage",
+                        "parameters": {
+                            "text": "Il <b>DestinyVendorBot </b> ti permette di effettuare diverse operazioni inviando comandi in linguaggio naturale, alcuni esempi di interrogazioni per le varie funzionalità sono: \n\n" + 
+                            "<b>🔸 Mostrare l'inventario dell'armaiolo </b>: \"Mostrami cosa vende l'armaiolo\",\"Mostrami coda vende Banshee\",\"Armaiolo\" o \"Mostrami le mod in vendita oggi \n\n"+
+                            "<b>🔸 Mostrare l'inventario del ragno </b>: \"Mostrami cosa vende il Ragno\" o \"Ragno\" \n\n"+
+                            "<b>🔸 Mostrare l'inventario di Xur </b> (Disponibile solo dal Venerdi (18 ora solare, 19 ora legale) al Martedi (18 ora solare, 19 ora legale)): \"Mostrami cosa vende Xur\" o \"Xur\" \n\n"+
+                            "<b>🔸 Spostare uno specifico item ad un determinato personaggio</b>: \"Sposta {nome del item}\", \"Muovi {nome del item}\" o \"Trasferisci {nome del item}\" \n"+
+                            "\n\n"+
+                            "Il bot implementa anche l'utilizzo di alcuni comandi che è possibile richiamare tramite la keyWord <b>/</b>, in questo modo verrà mostrato l'elenco dei comandi e una breve descrizione degli stessi.",
+                            "parse_mode": "HTML"
+                        }
+                    }
+                ]
+            }
+            await step.context.sendActivity(message);
+            return step.next();
         }
-        const reply = {
-            type: ActivityTypes.Message
-        };
         const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
         //Mostra l'invetraio dell'armaiolo
         if (LuisRecognizer.topIntent(luisResult) === 'GetGunsmith') {
             LongRequest.getGunsmithLong(this.br, accessdata, conversationData.conversationReference);
-            return await step.prompt(TEXT_PROMPT, "Sto contattando Banshee-44 alla Torre, probabilmente ha dimenticato dove ha lasciato la radio. Posso fare qualcos'altro nel frattempo per te ?");
+            await step.context.sendActivity("Sto contattando Banshee-44 alla Torre, probabilmente ha dimenticato dove ha lasciato la radio 🤣. Ti invierò una notifica appena avrò sue notizie.");
         }
         //Mostra l'invetraio del ragno
         if (LuisRecognizer.topIntent(luisResult) === "GetSpider") {
             LongRequest.getSpiderLong(this.br, accessdata, conversationData.conversationReference);
-            return await step.prompt(TEXT_PROMPT, "Sto contattando il Ragno sulla Riva, probabilmente è impegnato a ricattare qualcuno. Posso fare qualcos'altro nel frattempo per te ?");
+            await step.context.sendActivity("Sto contattando il Ragno sulla Riva, probabilmente è impegnato a ricattare qualcuno 😖. Ti invierò una notifica appena avrò sue notizie.");
         }
         //Mostra l'invetraio di Xur
         if (LuisRecognizer.topIntent(luisResult) === "GetXur") {
             LongRequest.getXurLong(this.br, accessdata, conversationData.conversationReference);
-            return await step.prompt(TEXT_PROMPT, "Sto cercando Xur nelle destinazioni, potrei chiedere ai Nove dove si trova. Posso fare qualcos'altro nel frattempo per te ?");
+            await step.context.sendActivity("Sto cercando Xur nelle destinazioni, potrei chiedere ai Nove dove si trova 🤔. Ti invierò una notifica appena avrò sue notizie.");
+        } 
+        //Spostamento di un item
+        if (LuisRecognizer.topIntent(luisResult) === "MoveItem") {
+            await step.context.sendActivity("Sei entrato nella modalità trasferimento item 🚚.")
+            const data = {
+                accessdata: accessdata,
+                name: luisResult.entities.item[0]
+            }
+            return await step.beginDialog(MOVE_ITEM_DIALOG, data);
         }
         //Richiesta non supportata
         if (LuisRecognizer.topIntent(luisResult) === "None") {
-            reply.text = "Mi dispiace ma non sono in grado di aiutarti.";
-            await step.context.sendActivity(reply)
-            return await step.prompt(TEXT_PROMPT, "Chiedimi qualcos'altro.");
+            await step.context.sendActivity("❌ Mi dispiace ma non sono in grado di aiutarti.");
         }
+        return await step.next();
     }
     
     //Fa un loop
