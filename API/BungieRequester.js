@@ -41,13 +41,12 @@ class BungieRequester {
             }).catch(error => {
                 console.log(error.data);
             });
-
         return name;
     }
 
     //Recupera i dati di accesso
     async getAccessData(code) {
-        const res = { }
+        const res = {}
         const data = {
             client_id: this.clientId,
             grant_type: "authorization_code",
@@ -561,7 +560,7 @@ class BungieRequester {
         const container = database.container(process.env.ContainerId);
         const { resources: items } = await container.items.query(querySpec).fetchAll();
         if (items.length > 0) {
-            for(let i=0; i<items.length; i++){
+            for (let i = 0; i < items.length; i++) {
                 result.id.push(items[i].id);
             }
             result.name = items[0].displayProperties.name
@@ -623,7 +622,7 @@ class BungieRequester {
 
         for (let i = 0; i < Object.keys(items).length; i++) {
             for (let j = 0; j < items[Object.keys(items)[i]].length; j++) {
-                for(let x = 0; x < itemInfo.id.length; x++){
+                for (let x = 0; x < itemInfo.id.length; x++) {
                     if (String(items[Object.keys(items)[i]][j]["itemHash"]).localeCompare(itemInfo.id[x]) == 0) {
                         items[Object.keys(items)[i]][j].position = i;
                         istances.items.push(items[Object.keys(items)[i]][j]);
