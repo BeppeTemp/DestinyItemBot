@@ -1,5 +1,7 @@
 const { ComponentDialog,WaterfallDialog, ChoiceFactory, ChoicePrompt, TextPrompt} = require('botbuilder-dialogs');
+const { TurnContext } = require('botbuilder');
 const { BungieRequester } = require('../API/BungieRequester');
+const { LongRequest } = require('../dialogs/LongRequest');
 
 const path = require('path');
 const dotenv = require('dotenv');
@@ -12,6 +14,7 @@ const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
 const TEXT_PROMPT = 'TEXT_PROMPT';
 
 const MOVE_ITEM_DIALOG = "moveItemDialog";
+const DIALOGSTATE = "DIALOG_STATE";
 const INFO_TRANSFER_PROPERTY = "infoTransferProperty";
 const ACCESS_DATA_PROPERTY = "accessDataProperty";
 const IS_NAME_WRONG = "isNameWrong";
@@ -23,6 +26,7 @@ class MoveItemDialog extends ComponentDialog {
         this.userState = userState;
         this.br = new BungieRequester();
 
+        this.dialogState = userState.createProperty(DIALOGSTATE)
         this.infoTransferProperty = userState.createProperty(INFO_TRANSFER_PROPERTY);
         this.accessdataProperty = userState.createProperty(ACCESS_DATA_PROPERTY);
         this.isNameWrong = userState.createProperty(IS_NAME_WRONG);
@@ -44,7 +48,7 @@ class MoveItemDialog extends ComponentDialog {
         var isWrong = await this.isNameWrong.get(step.context, false);
         
         if(isWrong){
-            return await step.prompt(TEXT_PROMPT, "Quale item vuoi spostare ? (/exit per annullare)");
+            return await step.prompt(TEXT_PROMPT, "A quale item ti riferivi ? Assicurati di inserire soltanto il nome del item oppure scrivi /exit per annullare ed uscire dalla modalità trasferimento.");
         }
         return step.next();
     }
@@ -67,6 +71,7 @@ class MoveItemDialog extends ComponentDialog {
         }
 
         if (name.localeCompare("/exit") == 0){
+            await step.context.sendActivity("Sei uscito dalla modalità trasferimento item 👋.");
             return await step.endDialog();
         }
 
@@ -78,7 +83,7 @@ class MoveItemDialog extends ComponentDialog {
 
         if (istances.items.length == 0){
             await this.isNameWrong.set(step.context, true);
-            await step.context.sendActivity("Item inserito non trovato. Assicurati di aver inserito un item che effettivamente possiedi e di averlo digitato correttamente.");
+            await step.context.sendActivity("⚠️ Item inserito non trovato. Assicurati di aver inserito un item che effettivamente possiedi e di averlo digitato correttamente.");
             return await step.replaceDialog(this.id, data);
         }
         if (istances.items.length == 1){
@@ -90,7 +95,7 @@ class MoveItemDialog extends ComponentDialog {
 
         const choices = [];
         for(let i=0;i<istances.items.length;i++){
-            const choice = istances.name + " (" + istances.items[i].power + ")";
+            const choice = istances.name + " " + istances.items[i].power +" 🕯";
             choices.push(choice);
         }
         return await step.prompt(CHOICE_PROMPT, {
@@ -113,7 +118,7 @@ class MoveItemDialog extends ComponentDialog {
         const choices = [];
 
         for(let i=0;i<characters.length;i++){
-            choices.push(characters[i].class + " " + String(characters[i].light));
+            choices.push(characters[i].class + " " + String(characters[i].light)+" 🕯");
         }
         return await step.prompt(CHOICE_PROMPT, {
             prompt: 'Seleziona il personaggio a cui vuoi trasferire l\'item:',
@@ -123,14 +128,17 @@ class MoveItemDialog extends ComponentDialog {
 
     //Effettura lo spostamento dell'item
     async moveItem(step) {
+        const conversationData = await this.dialogState.get(step.context, {});
+        conversationData.conversationReference = TurnContext.getConversationReference(step.context.activity);
 
         var accessdata = await this.accessdataProperty.get(step.context, {});
         const infoTransfer = await this.infoTransferProperty.get(step.context, {});
         infoTransfer.indexCharacter = step._info.result.index;
         await this.infoTransferProperty.set(step.context, infoTransfer);
 
-        await this.br.moveItem(infoTransfer, accessdata, process.env.membershipType);
-
+        LongRequest.moveItemLong(this.br, infoTransfer, accessdata, conversationData.conversationReference);
+        await step.context.sendActivity("Ho avviato lo spostamento del'item da te richiesto, ti invierò una notifica appena avro terminato l'operazione 😎.");
+        await step.context.sendActivity("Sei uscito dalla modalità trasferimento item 👋.");
         await this.isNameWrong.set(step.context, false);
         return await step.endDialog();
     }

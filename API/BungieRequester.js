@@ -1,14 +1,11 @@
 const axios = require("axios");
 const qs = require("qs");
-var fs = require('fs');
 const { CosmosClient } = require("@azure/cosmos");
-
 const { promisify } = require('util')
 const sleep = promisify(setTimeout)
 
 const path = require('path');
 const dotenv = require('dotenv');
-const { Console } = require("console");
 const ENV_FILE = path.join(__dirname, '../.env');
 dotenv.config({ path: ENV_FILE });
 
@@ -684,14 +681,11 @@ class BungieRequester {
         const characters = await this.getCharacters(accessdata, membershipType);
         const items = await this.getIstancesFromId(infoTransfer.name, accessdata, membershipType);
 
-        //Prima il true e poi il false
-
-        console.log(infoTransfer);
-        console.log(characters);
-        console.log(items);
+        var status = {};
 
         if (items.items[infoTransfer.indexItem].position != 0) {
-            console.log("Spostamento da personaggio");
+            console.log("--- Spostamento da personaggio a personaggio avviato.");
+            console.log("Spostamento verso il vault.")
             var data = {
                 membershipType: membershipType,
                 itemReferenceHash: items.items[infoTransfer.indexItem].itemHash,
@@ -707,34 +701,39 @@ class BungieRequester {
                 }
             })
                 .then(result => {
-                    console.log(result.data);
+                    console.log("Spostamento verso il vault completato con successo.");
                 }).catch(error => {
+                    console.log("Spostamento verso il vault fallito.")
                     console.log(error.response.data);
                 });
 
-            await sleep(parseInt(process.env.TimeOne) * 5000).then(() => { })
+            data.transferToVault = false;
+            data.characterId = characters[infoTransfer.indexCharacter].id;
 
-            data = {
-                membershipType: membershipType,
-                itemReferenceHash: items.items[infoTransfer.indexItem].itemHash,
-                itemId: items.items[infoTransfer.indexItem].itemInstanceId,
-                characterId: characters[infoTransfer.indexCharacter].id,
-                stackSize: "1",
-                transferToVault: true,
-            }
-            await axios.post(this.basePath + '/Destiny2/Actions/Items/TransferItem/', data, {
+            await sleep(process.env.MoveRefreshTime + 1000);
+
+            status = await axios.post(this.basePath + '/Destiny2/Actions/Items/TransferItem/', data, {
                 headers: {
                     "Authorization": accessdata.token_type + " " + accessdata.access_token,
                     "X-API-Key": this.apiKey
                 }
             })
                 .then(result => {
-                    console.log(result.data);
+                    var status = {};
+                    status.error = 0;
+                    console.log("Spostamento verso il personaggio completato con successo.");
+                    return status;
                 }).catch(error => {
+                    var status = {};
+                    status.error = 1;
+                    console.log("Spostamento verso il personaggio fallito.")
                     console.log(error.response.data);
+                    return status;
                 });
+            return status;
+
         } else {
-            console.log("Spostamento da deposito");
+            console.log("--- Spostamento da vault a personaggio avviato.");
             var data = {
                 membershipType: membershipType,
                 itemReferenceHash: items.items[infoTransfer.indexItem].itemHash,
@@ -743,17 +742,25 @@ class BungieRequester {
                 stackSize: "1",
                 transferToVault: false,
             }
-            await axios.post(this.basePath + '/Destiny2/Actions/Items/TransferItem/', data, {
+            status = await axios.post(this.basePath + '/Destiny2/Actions/Items/TransferItem/', data, {
                 headers: {
                     "Authorization": accessdata.token_type + " " + accessdata.access_token,
                     "X-API-Key": this.apiKey
                 }
             })
                 .then(result => {
-                    console.log(result.data);
+                    var status = {};
+                    status.error = 0;
+                    console.log("Spostamento da vault a personaggio completato con successo.");
+                    return status;
                 }).catch(error => {
+                    var status = {};
+                    status.error = 1;
+                    console.log("Spostamento da vault a personaggio fallito.")
                     console.log(error.response.data);
+                    return status;
                 });
+            return status;
         }
     }
 }
