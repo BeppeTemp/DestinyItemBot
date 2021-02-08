@@ -41,21 +41,12 @@ class BungieRequester {
             }).catch(error => {
                 console.log(error.data);
             });
-
         return name;
     }
 
     //Recupera i dati di accesso
     async getAccessData(code) {
-        var res = {
-            error: 0,
-            access_token: null,
-            token_type: null,
-            expires_in: null,
-            refresh_token: null,
-            refresh_expires_in: null,
-            membership_id: null
-        }
+        const res = {}
         const data = {
             client_id: this.clientId,
             grant_type: "authorization_code",
@@ -64,12 +55,8 @@ class BungieRequester {
         }
         await axios.post(this.basePath + '/app/oauth/token/', qs.stringify(data))
             .then(result => {
-                res.access_token = result.data.access_token;
-                res.token_type = result.data.token_type;
-                res.expires_in = result.data.expires_in;
-                res.refresh_token = result.data.refresh_token;
-                res.refresh_expires_in = result.data.refresh_expires_in;
-                res.membership_id = result.data.membership_id;
+                res = result.data;
+                res.error = 0;
             }).catch(error => {
                 res.error = 1;
                 console.log(error.response.data);
@@ -565,17 +552,20 @@ class BungieRequester {
             endpoint: process.env.EndPoint,
             key: process.env.Key
         }
-        var result = {};
+        var result = {
+            id: [],
+        };
         const client = new CosmosClient(DbSettings);
         const database = client.database(process.env.DataBaseId);
         const container = database.container(process.env.ContainerId);
         const { resources: items } = await container.items.query(querySpec).fetchAll();
         if (items.length > 0) {
-            result.id = items[0].id;
+            for (let i = 0; i < items.length; i++) {
+                result.id.push(items[i].id);
+            }
             result.name = items[0].displayProperties.name
-
         } else {
-            result.id = null;
+            result.id = [];
             result.name = null;
         }
         return result;
@@ -632,9 +622,11 @@ class BungieRequester {
 
         for (let i = 0; i < Object.keys(items).length; i++) {
             for (let j = 0; j < items[Object.keys(items)[i]].length; j++) {
-                if (String(items[Object.keys(items)[i]][j]["itemHash"]).localeCompare(itemInfo.id) == 0) {
-                    items[Object.keys(items)[i]][j].position = i;
-                    istances.items.push(items[Object.keys(items)[i]][j]);
+                for (let x = 0; x < itemInfo.id.length; x++) {
+                    if (String(items[Object.keys(items)[i]][j]["itemHash"]).localeCompare(itemInfo.id[x]) == 0) {
+                        items[Object.keys(items)[i]][j].position = i;
+                        istances.items.push(items[Object.keys(items)[i]][j]);
+                    }
                 }
             }
         }
