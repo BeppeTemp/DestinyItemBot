@@ -4,6 +4,7 @@ const { CosmosClient } = require("@azure/cosmos");
 const { promisify } = require('util')
 const sleep = promisify(setTimeout)
 
+
 const path = require('path');
 const dotenv = require('dotenv');
 const ENV_FILE = path.join(__dirname, '../.env');

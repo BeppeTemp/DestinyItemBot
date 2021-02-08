@@ -874,6 +874,7 @@ class LongRequest {
                 }else{
                     await turnContext.sendActivity("❌ Il trasferimento che avevi richiesto è fallito. Riprova, se il problema persiste constatta uno sviluppatore.");
                 } 
+
             });
         } catch (error) {
             //console.log('Bad Request. Please ensure your message contains the conversation reference and message text.');

@@ -190,9 +190,7 @@ class MainDialog extends ComponentDialog {
             await step.context.sendActivity(message);
             return step.next();
         }
-        
         const luisResult = await this.luisRecognizer.executeLuisQuery(step.context);
-
         //Mostra l'invetraio dell'armaiolo
         if (LuisRecognizer.topIntent(luisResult) === 'GetGunsmith') {
             LongRequest.getGunsmithLong(this.br, accessdata, conversationData.conversationReference);
