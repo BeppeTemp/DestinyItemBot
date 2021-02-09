@@ -113,7 +113,7 @@ class MainDialog extends ComponentDialog {
 
                 }],
                 {
-                    text: 'Premi sul pulsante per ottenere il codice di accesso e autenticarti nel bot. Una volta completata l\'operazoine non dovrai più ripeterla per 90 giorni.',
+                    text: 'Premi sul pulsante per autenticarti nel bot. Una volta completata l\'operazoine non dovrai più ripeterla per 90 giorni.',
                 }
             );
             reply.attachments = [card];
