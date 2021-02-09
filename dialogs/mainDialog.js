@@ -183,7 +183,6 @@ class MainDialog extends ComponentDialog {
             return await step.next();
         }
         if (step.context._activity.text.localeCompare("/help") == 0) {
-
             var message = {
                 "channelData": [
                     {
