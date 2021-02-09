@@ -869,7 +869,7 @@ class LongRequest {
                 if(status.error == 0){
                     await turnContext.sendActivity("✅ Il trasferimento che avevi richiesto è stato completato con successo.");
                 }else{
-                    await turnContext.sendActivity("❌ Il trasferimento che avevi richiesto è fallito. Riprova assicurandoti di non aver richiesto il trasferimento di un item equipaggiato su un PG attivo in game, se il problema persiste constatta uno sviluppatore.");
+                    await turnContext.sendActivity("❌ Il trasferimento che avevi richiesto è fallito. Riprova assicurandoti di non aver richiesto il trasferimento di un item equipaggiato o su un PG attivo in game, se il problema persiste constatta uno sviluppatore.");
                 } 
 
             });
