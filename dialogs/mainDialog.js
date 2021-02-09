@@ -70,14 +70,8 @@ class MainDialog extends ComponentDialog {
         const reply = {
             type: ActivityTypes.Message
         };
-
         const didBotWelcomedUser = await this.welcomedUserProperty.get(step.context, false);
-
         if (didBotWelcomedUser === false) {
-            var state = await this.stateAccessor.get(step.context, {});
-            state.code = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
-            this.stateAccessor.set(step.context, state);
-
             var card = CardFactory.thumbnailCard(
                 'Salve Guardiano/a ! Sono il DestinyVendorBot. 🤖',
                 [{
@@ -101,8 +95,12 @@ class MainDialog extends ComponentDialog {
             type: ActivityTypes.Message
         };
         const didLoginUser = await this.loginUser.get(step.context, false);
-        var state = await this.stateAccessor.get(step.context, {});
         if (didLoginUser === false) {
+
+            var state = await this.stateAccessor.get(step.context, {});
+            state.code = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+            this.stateAccessor.set(step.context, state);
+
             var card = CardFactory.thumbnailCard(
                 '⚠️ Login richiesto ! ⚠️',
                 [],
