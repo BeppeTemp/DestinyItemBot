@@ -182,6 +182,10 @@ class MainDialog extends ComponentDialog {
             await this.loginUser.set(step.context, false);
             return await step.next();
         }
+        if(step.context._activity.text.localeCompare("/logout") == 0){
+            await this.loginUser.set(step.context, false);
+            return await step.next();
+        }
         if (step.context._activity.text.localeCompare("/help") == 0) {
             var message = {
                 "channelData": [

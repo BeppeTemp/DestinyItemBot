@@ -1,5 +1,6 @@
 Lista contente tutti i comandi del bot:
 
-restart - Riavvia il bot dal messaggio di benvenuto permettendoti di riloggarti.
+restart - Riavvia il bot dal messaggio di benvenuto.
+logout - Disconnetti il tuo profilo dal bot.
 exit - Annulla lo spostamento di un item.
 help - Mostrare le funzionalità disponibili.

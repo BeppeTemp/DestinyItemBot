@@ -99,7 +99,7 @@ class BungieRequester {
         const data = {
             client_id: this.clientId,
             grant_type: "refresh_token",
-            refresh_token: oldcode+,
+            refresh_token: oldcode,
             client_secret: this.clientSecret
         }
         await axios.post(this.basePath + '/app/oauth/token/', qs.stringify(data))
