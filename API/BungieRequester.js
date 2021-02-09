@@ -21,11 +21,12 @@ class BungieRequester {
         this.state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     }
 
-    //Generazione del link per il login
+    //Genera un link di login
     loginlink() {
         var responseType = "response_type=code&";
         var callBackUri = "redirect_uri=" + this.callBack + "&";
         var state = "state=" + this.state;
+        console.log("Link generato.");
         return this.baseLoginPath + responseType + "client_id=" + this.clientId + "&" + callBackUri + state;
     }
 
@@ -41,12 +42,13 @@ class BungieRequester {
             }).catch(error => {
                 console.log(error.data);
             });
+        console.log("Nome giocatore ottenuto.");
         return name;
     }
 
-    //Recupera i dati di accesso
+    //Ottiene i dati di accesso
     async getAccessData(code) {
-        const res = {}
+        var res = {}
         const data = {
             client_id: this.clientId,
             grant_type: "authorization_code",
@@ -61,20 +63,13 @@ class BungieRequester {
                 res.error = 1;
                 console.log(error.response.data);
             });
+        console.log("Dati di accesso ottenuti.");
         return res;
     }
 
-    //Aggiorna l'access token
+    //Aggiorna i dati di accesso
     async refreshAccessData(oldcode) {
-        var res = {
-            error: 0,
-            access_token: null,
-            token_type: null,
-            expires_in: null,
-            refresh_token: null,
-            refresh_expires_in: null,
-            membership_id: null
-        }
+        var res = {}
         const data = {
             client_id: this.clientId,
             grant_type: "refresh_token",
@@ -83,16 +78,13 @@ class BungieRequester {
         }
         await axios.post(this.basePath + '/app/oauth/token/', qs.stringify(data))
             .then(result => {
-                res.access_token = result.data.access_token;
-                res.token_type = result.data.token_type;
-                res.expires_in = result.data.expires_in;
-                res.refresh_token = result.data.refresh_token;
-                res.refresh_expires_in = result.data.refresh_expires_in;
-                res.membership_id = result.data.membership_id;
+                res = result.data;
+                res.error = 0;
             }).catch(error => {
                 res.error = 1;
                 console.log(error.response.data);
             });
+        console.log("Dati di accesso aggiornati.");
         return res;
     }
 
@@ -104,6 +96,7 @@ class BungieRequester {
             }
         })
             .then(result => {
+                console.log("ID piattaforma ottenuto.");
                 return result.data.Response.primaryMembershipId;
             }).catch(error => {
                 console.log(error.data);
@@ -118,6 +111,7 @@ class BungieRequester {
             }
         })
             .then(result => {
+                console.log("ID personaggio singolo ottenuto.");
                 return result.data.Response.profile.data.characterIds[character];
             }).catch(error => {
                 console.log(error.data);
@@ -137,6 +131,7 @@ class BungieRequester {
                 console.log(error);
             });
         const check = [checkList[items[0].collectibleHash].state, checkList[items[1].collectibleHash].state];
+        console.log("Possesso mod verificato.");
         return check;
     }
 
@@ -210,26 +205,11 @@ class BungieRequester {
         } else {
             var mod = {
                 error: 1,
-                modOne: {
-                    name: null,
-                    type: null,
-                    image: null,
-                    have: {
-                        text: null,
-                        color: null
-                    }
-                },
-                modTwo: {
-                    name: null,
-                    type: null,
-                    image: null,
-                    have: {
-                        text: null,
-                        color: null
-                    }
-                }
+                modOne: null,
+                modTwo: null,
             }
         }
+        console.log("Dati armaiolo ottenuti.");
         return mod;
     }
 
@@ -244,24 +224,12 @@ class BungieRequester {
             }
         })
             .then(result => {
-                const items = [
-                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]].itemHash,
-                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[1]].itemHash,
-                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[2]].itemHash,
-                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[3]].itemHash,
-                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[4]].itemHash,
-                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[5]].itemHash,
-                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[6]].itemHash,
-                ]
-                const costs = [
-                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]].costs,
-                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[1]].costs,
-                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[2]].costs,
-                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[3]].costs,
-                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[4]].costs,
-                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[5]].costs,
-                    result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[6]].costs,
-                ]
+                const items = [];
+                const costs = [];
+                for (let i = 0; i < 7; i++) {
+                    items.push(result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[i]].itemHash);
+                    costs.push(result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[i]].costs);
+                }
                 const spiderItems = {
                     error: 0,
                     items: items,
@@ -298,89 +266,29 @@ class BungieRequester {
             }
             const itemsSold = {
                 error: 0,
-                itemOne: {
-                    item: {
-                        name: (items[0].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[0].displayProperties.name.slice(10),
-                        icon: "https://www.bungie.net/" + items[0].displayProperties.icon,
-                    },
-                    cost: {
-                        name: costs[0].displayProperties.name,
-                        icon: "https://www.bungie.net/" + costs[0].displayProperties.icon,
-                        quantity: spiderItems.costs[0][0].quantity
-                    }
-                },
-                itemTwo: {
-                    item: {
-                        name: (items[1].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[1].displayProperties.name.slice(10),
-                        icon: "https://www.bungie.net/" + items[1].displayProperties.icon,
-                    },
-                    cost: {
-                        name: costs[1].displayProperties.name,
-                        icon: "https://www.bungie.net/" + costs[1].displayProperties.icon,
-                        quantity: spiderItems.costs[1][0].quantity
-                    }
-                },
-                itemThree: {
-                    item: {
-                        name: (items[2].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[2].displayProperties.name.slice(10),
-                        icon: "https://www.bungie.net/" + items[2].displayProperties.icon,
-                    },
-                    cost: {
-                        name: costs[2].displayProperties.name,
-                        icon: "https://www.bungie.net/" + costs[2].displayProperties.icon,
-                        quantity: spiderItems.costs[2][0].quantity
-                    }
-                },
-                itemFour: {
-                    item: {
-                        name: (items[3].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[3].displayProperties.name.slice(10),
-                        icon: "https://www.bungie.net/" + items[3].displayProperties.icon,
-                    },
-                    cost: {
-                        name: costs[3].displayProperties.name,
-                        icon: "https://www.bungie.net/" + costs[3].displayProperties.icon,
-                        quantity: spiderItems.costs[3][0].quantity
-                    }
-                },
-                itemFive: {
-                    item: {
-                        name: (items[4].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[4].displayProperties.name.slice(10),
-                        icon: "https://www.bungie.net/" + items[4].displayProperties.icon,
-                    },
-                    cost: {
-                        name: costs[4].displayProperties.name,
-                        icon: "https://www.bungie.net/" + costs[4].displayProperties.icon,
-                        quantity: spiderItems.costs[4][0].quantity
-                    }
-                },
-                itemSix: {
-                    item: {
-                        name: (items[5].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[5].displayProperties.name.slice(10),
-                        icon: "https://www.bungie.net/" + items[5].displayProperties.icon,
-                    },
-                    cost: {
-                        name: costs[5].displayProperties.name,
-                        icon: "https://www.bungie.net/" + costs[5].displayProperties.icon,
-                        quantity: spiderItems.costs[5][0].quantity
-                    }
-                },
-                itemSeven: {
-                    item: {
-                        name: (items[6].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[6].displayProperties.name.slice(10),
-                        icon: "https://www.bungie.net/" + items[6].displayProperties.icon,
-                    },
-                    cost: {
-                        name: costs[6].displayProperties.name,
-                        icon: "https://www.bungie.net/" + costs[6].displayProperties.icon,
-                        quantity: spiderItems.costs[6][0].quantity
-                    }
-                }
+                items: []
             }
+            for (let i = 0; i < 7; i++) {
+                itemsSold.items.push({
+                    item: {
+                        name: (items[i].displayProperties.name.slice(9)).charAt(0).toUpperCase() + items[i].displayProperties.name.slice(10),
+                        icon: "https://www.bungie.net/" + items[i].displayProperties.icon,
+                    },
+                    cost: {
+                        name: costs[i].displayProperties.name,
+                        icon: "https://www.bungie.net/" + costs[i].displayProperties.icon,
+                        quantity: spiderItems.costs[i][0].quantity
+                    }
+                });
+
+            }
+            console.log("Dati Ragno ottenuti.");
             return itemsSold;
         } else {
             const itemsSold = {
                 error: 1
             }
+            console.log("Dati Ragno non ottenuti.");
             return itemsSold;
         }
     }
@@ -504,41 +412,18 @@ class BungieRequester {
                     icon: "https://www.bungie.net/" + itemsDb[3].displayProperties.icon,
                 },
             }
+            console.log("Dati di Xur ottenuti");
             return result;
         }
         if (items.canPurchase == false) {
             const result = {
                 canPurchase: false,
-                weapon: {
-                    name: null,
-                    type: null,
-                    icon: null,
-                },
-                armorOne: {
-                    name: null,
-                    stats: {
-                        all: null,
-                        tot: null,
-                    },
-                    icon: null,
-                },
-                armorTwo: {
-                    name: null,
-                    stats: {
-                        all: null,
-                        tot: null,
-                    },
-                    icon: null,
-                },
-                armorThree: {
-                    name: null,
-                    stats: {
-                        all: null,
-                        tot: null,
-                    },
-                    icon: null,
-                },
+                weapon: null,
+                armorOne: null,
+                armorTwo: null,
+                armorThree: null,
             }
+            console.log("Dati di Xur non ottenuti");
             return result;
         }
     }
@@ -568,6 +453,7 @@ class BungieRequester {
             result.id = [];
             result.name = null;
         }
+        console.log("ID arma ottenuto dal nome");
         return result;
     }
 
@@ -588,6 +474,7 @@ class BungieRequester {
         for (let i = 0; i < istances.items.length; i++) {
             istances.items[i].power = info[istances.items[i].itemInstanceId + ""].primaryStat.value;
         }
+        console.log("Potere item ottenuto.");
         return istances;
     }
 
@@ -631,6 +518,7 @@ class BungieRequester {
             }
         }
         const inst = await this.getPower(istances, accessdata, membershipType);
+        console.log("ID delle istanze ottenuti");
         return inst;
     }
 
@@ -666,6 +554,7 @@ class BungieRequester {
             }).catch(error => {
                 console.log(error);
             });
+        console.log("ID dei personaggi ottenuti");
         return characters;
     }
 
@@ -723,6 +612,7 @@ class BungieRequester {
                     console.log(error.response.data);
                     return status;
                 });
+            console.log("Item trasferiti");
             return status;
 
         } else {
@@ -753,6 +643,7 @@ class BungieRequester {
                     console.log(error.response.data);
                     return status;
                 });
+            console.log("Item trasferiti");
             return status;
         }
     }

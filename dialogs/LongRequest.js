@@ -156,7 +156,7 @@ class LongRequest {
                                     "items": [
                                         {
                                             "type": "Image",
-                                            "url": item.itemOne.item.icon
+                                            "url": item.items[0].item.icon
                                         }
                                     ],
                                     "width": "auto"
@@ -166,7 +166,7 @@ class LongRequest {
                                     "items": [
                                         {
                                             "type": "TextBlock",
-                                            "text": item.itemOne.item.name,
+                                            "text": item.items[0].item.name,
                                             "wrap": true,
                                             "fontType": "Default",
                                             "size": "Large",
@@ -183,7 +183,7 @@ class LongRequest {
                                                     "items": [
                                                         {
                                                             "type": "TextBlock",
-                                                            "text": item.itemOne.cost.quantity + " " + item.itemOne.cost.name,
+                                                            "text": item.items[0].cost.quantity + " " + item.items[0].cost.name,
                                                             "wrap": true,
                                                             "weight": "Bolder",
                                                             "color": "Light",
@@ -202,7 +202,7 @@ class LongRequest {
                                                     "items": [
                                                         {
                                                             "type": "Image",
-                                                            "url": item.itemOne.cost.icon,
+                                                            "url": item.items[0].cost.icon,
                                                             "size": "small"
                                                         }
                                                     ]
@@ -222,7 +222,7 @@ class LongRequest {
                                     "items": [
                                         {
                                             "type": "Image",
-                                            "url": item.itemTwo.item.icon
+                                            "url": item.items[1].item.icon
                                         }
                                     ],
                                     "width": "auto"
@@ -232,7 +232,7 @@ class LongRequest {
                                     "items": [
                                         {
                                             "type": "TextBlock",
-                                            "text": item.itemTwo.item.name,
+                                            "text": item.items[1].item.name,
                                             "wrap": true,
                                             "fontType": "Default",
                                             "size": "Large",
@@ -249,7 +249,7 @@ class LongRequest {
                                                     "items": [
                                                         {
                                                             "type": "TextBlock",
-                                                            "text": item.itemTwo.cost.quantity + " " + item.itemTwo.cost.name,
+                                                            "text": item.items[1].cost.quantity + " " + item.items[1].cost.name,
                                                             "wrap": true,
                                                             "weight": "Bolder",
                                                             "color": "Light",
@@ -268,7 +268,7 @@ class LongRequest {
                                                     "items": [
                                                         {
                                                             "type": "Image",
-                                                            "url": item.itemTwo.cost.icon,
+                                                            "url": item.items[1].cost.icon,
                                                             "size": "small"
                                                         }
                                                     ]
@@ -288,7 +288,7 @@ class LongRequest {
                                     "items": [
                                         {
                                             "type": "Image",
-                                            "url": item.itemThree.item.icon
+                                            "url": item.items[2].item.icon
                                         }
                                     ],
                                     "width": "auto"
@@ -298,7 +298,7 @@ class LongRequest {
                                     "items": [
                                         {
                                             "type": "TextBlock",
-                                            "text": item.itemThree.item.name,
+                                            "text": item.items[2].item.name,
                                             "wrap": true,
                                             "fontType": "Default",
                                             "size": "Large",
@@ -315,7 +315,7 @@ class LongRequest {
                                                     "items": [
                                                         {
                                                             "type": "TextBlock",
-                                                            "text": item.itemThree.cost.quantity + " " + item.itemThree.cost.name,
+                                                            "text": item.items[2].cost.quantity + " " + item.items[2].cost.name,
                                                             "wrap": true,
                                                             "weight": "Bolder",
                                                             "color": "Light",
@@ -334,7 +334,7 @@ class LongRequest {
                                                     "items": [
                                                         {
                                                             "type": "Image",
-                                                            "url": item.itemThree.cost.icon,
+                                                            "url": item.items[2].cost.icon,
                                                             "size": "small"
                                                         }
                                                     ]
@@ -354,7 +354,7 @@ class LongRequest {
                                     "items": [
                                         {
                                             "type": "Image",
-                                            "url": item.itemFour.item.icon
+                                            "url": item.items[3].item.icon
                                         }
                                     ],
                                     "width": "auto"
@@ -364,7 +364,7 @@ class LongRequest {
                                     "items": [
                                         {
                                             "type": "TextBlock",
-                                            "text": item.itemFour.item.name,
+                                            "text": item.items[3].item.name,
                                             "wrap": true,
                                             "fontType": "Default",
                                             "size": "Large",
@@ -381,7 +381,7 @@ class LongRequest {
                                                     "items": [
                                                         {
                                                             "type": "TextBlock",
-                                                            "text": item.itemFour.cost.quantity + " " + item.itemFour.cost.name,
+                                                            "text": item.items[3].cost.quantity + " " + item.items[3].cost.name,
                                                             "wrap": true,
                                                             "weight": "Bolder",
                                                             "color": "Light",
@@ -400,7 +400,7 @@ class LongRequest {
                                                     "items": [
                                                         {
                                                             "type": "Image",
-                                                            "url": item.itemFour.cost.icon,
+                                                            "url": item.items[3].cost.icon,
                                                             "size": "small"
                                                         }
                                                     ]
@@ -420,7 +420,7 @@ class LongRequest {
                                     "items": [
                                         {
                                             "type": "Image",
-                                            "url": item.itemFive.item.icon
+                                            "url": item.items[4].item.icon
                                         }
                                     ],
                                     "width": "auto"
@@ -430,7 +430,7 @@ class LongRequest {
                                     "items": [
                                         {
                                             "type": "TextBlock",
-                                            "text": item.itemFive.item.name,
+                                            "text": item.items[4].item.name,
                                             "wrap": true,
                                             "fontType": "Default",
                                             "size": "Large",
@@ -447,7 +447,7 @@ class LongRequest {
                                                     "items": [
                                                         {
                                                             "type": "TextBlock",
-                                                            "text": item.itemFive.cost.quantity + " " + item.itemFive.cost.name,
+                                                            "text": item.items[4].cost.quantity + " " + item.items[4].cost.name,
                                                             "wrap": true,
                                                             "weight": "Bolder",
                                                             "color": "Light",
@@ -466,7 +466,7 @@ class LongRequest {
                                                     "items": [
                                                         {
                                                             "type": "Image",
-                                                            "url": item.itemFive.cost.icon,
+                                                            "url": item.items[4].cost.icon,
                                                             "size": "small"
                                                         }
                                                     ]
@@ -486,7 +486,7 @@ class LongRequest {
                                     "items": [
                                         {
                                             "type": "Image",
-                                            "url": item.itemSix.item.icon
+                                            "url": item.items[5].item.icon
                                         }
                                     ],
                                     "width": "auto"
@@ -496,7 +496,7 @@ class LongRequest {
                                     "items": [
                                         {
                                             "type": "TextBlock",
-                                            "text": item.itemSix.item.name,
+                                            "text": item.items[5].item.name,
                                             "wrap": true,
                                             "fontType": "Default",
                                             "size": "Large",
@@ -513,7 +513,7 @@ class LongRequest {
                                                     "items": [
                                                         {
                                                             "type": "TextBlock",
-                                                            "text": item.itemSix.cost.quantity + " " + item.itemSix.cost.name,
+                                                            "text": item.items[5].cost.quantity + " " + item.items[5].cost.name,
                                                             "wrap": true,
                                                             "weight": "Bolder",
                                                             "color": "Light",
@@ -532,7 +532,7 @@ class LongRequest {
                                                     "items": [
                                                         {
                                                             "type": "Image",
-                                                            "url": item.itemSix.cost.icon,
+                                                            "url": item.items[5].cost.icon,
                                                             "size": "small"
                                                         }
                                                     ]
@@ -552,7 +552,7 @@ class LongRequest {
                                     "items": [
                                         {
                                             "type": "Image",
-                                            "url": item.itemSeven.item.icon
+                                            "url": item.items[6].item.icon
                                         }
                                     ],
                                     "width": "auto"
@@ -562,7 +562,7 @@ class LongRequest {
                                     "items": [
                                         {
                                             "type": "TextBlock",
-                                            "text": item.itemSeven.item.name,
+                                            "text": item.items[6].item.name,
                                             "wrap": true,
                                             "fontType": "Default",
                                             "size": "Large",
@@ -579,7 +579,7 @@ class LongRequest {
                                                     "items": [
                                                         {
                                                             "type": "TextBlock",
-                                                            "text": item.itemSeven.cost.quantity + " " + item.itemSeven.cost.name,
+                                                            "text": item.items[6].cost.quantity + " " + item.items[6].cost.name,
                                                             "wrap": true,
                                                             "weight": "Bolder",
                                                             "color": "Light",
@@ -598,7 +598,7 @@ class LongRequest {
                                                     "items": [
                                                         {
                                                             "type": "Image",
-                                                            "url": item.itemSeven.cost.icon,
+                                                            "url": item.items[6].cost.icon,
                                                             "size": "small"
                                                         }
                                                     ]

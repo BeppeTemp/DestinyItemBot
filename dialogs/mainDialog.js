@@ -102,7 +102,7 @@ class MainDialog extends ComponentDialog {
 
                 }],
                 {
-                    text: 'Premi sul pulsante per ottenere il codice di accesso e autenticarti nel bot.',
+                    text: 'Premi sul pulsante per ottenere il codice di accesso e autenticarti nel bot. Una volta completata l\'operazoine non dovrai più ripeterla per 90 giorni.',
                 }
             );
             reply.attachments = [card];
@@ -176,12 +176,12 @@ class MainDialog extends ComponentDialog {
                         "method": "sendMessage",
                         "parameters": {
                             "text": "Il <b>DestinyVendorBot </b> ti permette di effettuare diverse operazioni inviando comandi in linguaggio naturale, alcuni esempi di interrogazioni per le varie funzionalità sono: \n\n" + 
-                            "<b>🔸 Mostrare l'inventario dell'armaiolo </b>: \"Mostrami cosa vende l'armaiolo\",\"Mostrami coda vende Banshee\",\"Armaiolo\" o \"Mostrami le mod in vendita oggi \n\n"+
-                            "<b>🔸 Mostrare l'inventario del ragno </b>: \"Mostrami cosa vende il Ragno\" o \"Ragno\" \n\n"+
-                            "<b>🔸 Mostrare l'inventario di Xur </b> (Disponibile solo dal Venerdi (18 ora solare, 19 ora legale) al Martedi (18 ora solare, 19 ora legale)): \"Mostrami cosa vende Xur\" o \"Xur\" \n\n"+
-                            "<b>🔸 Spostare uno specifico item ad un determinato personaggio</b>: \"Sposta {nome del item}\", \"Muovi {nome del item}\" o \"Trasferisci {nome del item}\" \n"+
+                            "<b>🔸 Mostrare l'inventario dell'armaiolo </b>: \"Mostrami cosa vende l'armaiolo\", \"Mostrami coda vende Banshee\", \"Armaiolo\" o \"Mostrami le mod in vendita oggi. \n\n"+
+                            "<b>🔸 Mostrare l'inventario del ragno </b>: \"Mostrami cosa vende il Ragno\" o \"Ragno\". \n\n"+
+                            "<b>🔸 Mostrare l'inventario di Xur </b> (Disponibile solo dal Venerdi (18 ora solare, 19 ora legale) al Martedi (18 ora solare, 19 ora legale)): \"Mostrami cosa vende Xur\" o \"Xur\". \n\n"+
+                            "<b>🔸 Spostare uno specifico item ad un determinato personaggio</b>: \"Sposta {nome del item}\", \"Muovi {nome del item}\" o \"Trasferisci {nome del item}\". \n"+
                             "\n\n"+
-                            "Il bot implementa anche l'utilizzo di alcuni comandi che è possibile richiamare tramite la keyWord <b>/</b>, in questo modo verrà mostrato l'elenco dei comandi e una breve descrizione degli stessi.",
+                            "Il bot implementa anche l'utilizzo di alcuni comandi che è possibile richiamare tramite la KeyWord <b>/</b>, in questo modo verrà mostrato l'elenco dei comandi e una breve descrizione degli stessi.",
                             "parse_mode": "HTML"
                         }
                     }
@@ -204,7 +204,7 @@ class MainDialog extends ComponentDialog {
         //Mostra l'invetraio di Xur
         if (LuisRecognizer.topIntent(luisResult) === "GetXur") {
             LongRequest.getXurLong(this.br, accessdata, conversationData.conversationReference);
-            await step.context.sendActivity("Sto cercando Xur nelle destinazioni, potrei chiedere ai Nove dove si trova 🤔. Ti invierò una notifica appena avrò sue notizie.");
+            await step.context.sendActivity("Sto cercando Xur nelle destinazioni, potrei chiedere a I Nove dove si trova 🤔. Ti invierò una notifica appena avrò sue notizie.");
         } 
         //Spostamento di un item
         if (LuisRecognizer.topIntent(luisResult) === "MoveItem") {
