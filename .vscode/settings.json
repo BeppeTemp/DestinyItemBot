@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/fe6b86ea-2a30-48f5-a70c-a10bc3047269/resourceGroups/BotResources/providers/Microsoft.Web/sites/destinyvendorbot",
+    "appService.deploySubpath": "."
+}
