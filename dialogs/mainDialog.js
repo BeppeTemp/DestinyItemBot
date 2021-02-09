@@ -1,5 +1,5 @@
 const { ActivityTypes, CardFactory, TurnContext } = require('botbuilder');
-const { TextPrompt, ComponentDialog, DialogSet, DialogTurnStatus, WaterfallDialog } = require('botbuilder-dialogs');
+const { TextPrompt, ComponentDialog, DialogSet, DialogTurnStatus, WaterfallDialog, ChoicePrompt, ChoiceFactory } = require('botbuilder-dialogs');
 const { LuisRecognizer } = require('botbuilder-ai');
 const { BungieRequester } = require('../API/BungieRequester');
 const { LongRequest } = require('../dialogs/LongRequest');
@@ -13,6 +13,7 @@ dotenv.config({ path: ENV_FILE });
 const MAIN_DIALOG = 'MAIN_DIALOG';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
 const TEXT_PROMPT = 'TEXT_PROMPT';
+const CHOICE_PROMPT = 'CHOICE_PROMPT';
 
 const USER_PROFILE_PROPERTY = 'USER_PROFILE_PROPERTY';
 const DIALOGSTATE = "DIALOG_STATE";
@@ -37,10 +38,11 @@ class MainDialog extends ComponentDialog {
 
         //Used dialogs
         this.addDialog(new MoveItemDialog(userState));
+        this.addDialog(new ChoicePrompt(CHOICE_PROMPT));
         this.addDialog(new TextPrompt(TEXT_PROMPT))
             .addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
                 this.welcomeStep.bind(this),
-                this.loginStep.bind(this),
+                this.getLoginLnkStep.bind(this),
                 this.getCodeStep.bind(this),
                 this.ChooseAction.bind(this),
                 this.loopStep.bind(this)
@@ -86,7 +88,7 @@ class MainDialog extends ComponentDialog {
     }
 
     //Mostra la card di login
-    async loginStep(step) {
+    async getLoginLnkStep(step) {
         const reply = {
             type: ActivityTypes.Message
         };
@@ -107,7 +109,10 @@ class MainDialog extends ComponentDialog {
             );
             reply.attachments = [card];
             await step.context.sendActivity(reply)
-            return await step.prompt(TEXT_PROMPT, 'Inserisci il codice di login ottenuto dalla pagina di Bungie: ');
+            return await step.prompt(CHOICE_PROMPT, {
+                prompt: 'Hai effettuato il login ?:',
+                choices: ChoiceFactory.toChoices(["Login completato ✅"])
+            });
         }else{
             return step.next();
         }
@@ -116,16 +121,21 @@ class MainDialog extends ComponentDialog {
     //Ottiene il codice di accesso ed effettua il login
     async getCodeStep(step) {
         const didLoginUser = await this.loginUser.get(step.context, false);
+        var accessdata = await this.userProfileAccessor.get(step.context, {});
+
         if (didLoginUser === false) {
-            var accessdata = await this.userProfileAccessor.get(step.context, {});
-            accessdata = await this.br.getAccessData(step.result);
+            accessdata = await this.br.getAccessData();
+
             if (accessdata.error == 1){
-                step.context.sendActivity("Codice inserito non valido");
+                step.context.sendActivity("❌ Errore sul login, assicurati di aver completato la procedura di login sul link sopra indicato e riprova.");
                 return await step.beginDialog(WATERFALL_DIALOG);
             }
-            await this.userProfileAccessor.set(step.context, accessdata);
+            
             const name = await this.br.getName(accessdata.membership_id, process.env.MemberShipType);
+            
+            await this.userProfileAccessor.set(step.context, accessdata);
             await this.loginUser.set(step.context, true);
+
             var message = {
                 "channelData": [
                     {

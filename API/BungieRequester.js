@@ -1,8 +1,10 @@
 const axios = require("axios");
 const qs = require("qs");
-const { CosmosClient } = require("@azure/cosmos");
 const { promisify } = require('util')
 const sleep = promisify(setTimeout)
+
+const { CosmosClient } = require("@azure/cosmos");
+const { QueueServiceClient } = require("@azure/storage-queue");
 
 
 const path = require('path');
@@ -46,8 +48,25 @@ class BungieRequester {
         return name;
     }
 
+    //Ottiene l'oauth code dalla coda
+    async getOauthCode(){
+        const queueServiceClient = QueueServiceClient.fromConnectionString(process.env.StorageAccountEndPoint);
+
+        const queueClient = queueServiceClient.getQueueClient(this.state);
+
+        const receiveMessages = await queueClient.receiveMessages();
+
+        const message = receiveMessages.receivedMessageItems[0];
+
+        queueServiceClient.deleteQueue(this.state);
+
+        return message.messageText;
+    }
+
     //Ottiene i dati di accesso
-    async getAccessData(code) {
+    async getAccessData() {
+        const code = this.getOauthCode();
+
         var res = {}
         const data = {
             client_id: this.clientId,
@@ -59,11 +78,12 @@ class BungieRequester {
             .then(result => {
                 res = result.data;
                 res.error = 0;
+                console.log("Dati di accesso ottenuti.");
             }).catch(error => {
                 res.error = 1;
                 console.log(error.response.data);
+                console.log("Dati di accesso non ottenuti.");
             });
-        console.log("Dati di accesso ottenuti.");
         return res;
     }
 
