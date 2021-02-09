@@ -46,28 +46,26 @@ class MoveItemDialog extends ComponentDialog {
     //Ottiene il nome dell'item da spostare
     async getNameItem(step){
         var isWrong = await this.isNameWrong.get(step.context, false);
-        
+
         if(isWrong){
             return await step.prompt(TEXT_PROMPT, "⚠️ Item richiesto non trovato. Scrivi solo il nome di un item che effettivamente possiedi per riprovare e assicurati di digitarlo correttamente. Se invece vuoi annullare la richiesta, scrivi /exit.");
         }
+
         return step.next();
     }
 
     //Seleziona quale item spostare in caso di doppioni
     async selectionItem(step) {
-
         const data = step.options;
 
         var accessdata = await this.accessdataProperty.get(step.context, {});
         accessdata = data.accessdata;
         await this.accessdataProperty.set(step.context, accessdata);
 
-        var name;
-
         if(await this.isNameWrong.get(step.context)){
-            name = step._info.result;
+            var name = step._info.result;
         }else{
-            name = data.name;
+            var name = data.name;
         }
 
         if (name.localeCompare("/exit") == 0){
@@ -107,8 +105,8 @@ class MoveItemDialog extends ComponentDialog {
     //Seleziona su quale personaggio spostare l'item
     async selectionCharacter(step) {
         var accessdata = await this.accessdataProperty.get(step.context, {});
-
         const infoTransfer = await this.infoTransferProperty.get(step.context, {});
+
         if(infoTransfer.indexItem != 0){
             if(step._info.result.value.localeCompare("Annulla 🛑") == 0){
                 await step.context.sendActivity("Sei uscito dalla modalità trasferimento item 👋.");
@@ -116,11 +114,12 @@ class MoveItemDialog extends ComponentDialog {
             }
             infoTransfer.indexItem = step._info.result.index;
         }
+
         await this.infoTransferProperty.set(step.context, infoTransfer);
 
         const characters = await this.br.getCharacters(accessdata ,process.env.MemberShipType);
-        const choices = [];
 
+        const choices = [];
         for(let i=0;i<characters.length;i++){
             choices.push(characters[i].class + " " + String(characters[i].light)+" 🕯");
         }
@@ -144,12 +143,14 @@ class MoveItemDialog extends ComponentDialog {
         var accessdata = await this.accessdataProperty.get(step.context, {});
         const infoTransfer = await this.infoTransferProperty.get(step.context, {});
         infoTransfer.indexCharacter = step._info.result.index;
-        await this.infoTransferProperty.set(step.context, infoTransfer);
-
+        
         LongRequest.moveItemLong(this.br, infoTransfer, accessdata, conversationData.conversationReference);
+
+        await this.infoTransferProperty.set(step.context, {});
+        await this.isNameWrong.set(step.context, false);
+        
         await step.context.sendActivity("Ho avviato lo spostamento del'item da te richiesto, ti invierò una notifica appena avrò terminato l'operazione 😎.");
         await step.context.sendActivity("Sei uscito dalla modalità trasferimento item 👋.");
-        await this.isNameWrong.set(step.context, false);
         return await step.endDialog();
     }
 }
