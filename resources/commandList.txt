@@ -1,6 +1,5 @@
 Lista contente tutti i comandi del bot:
 
-logout - Disconnette il tuo account Bungie dal bot. 
-restart - Riavvia il bot dal messaggio di benvenuto.
+restart - Riavvia il bot dal messaggio di benvenuto permettendoti di riloggarti.
 exit - Annulla lo spostamento di un item.
 help - Mostrare le funzionalità disponibili.

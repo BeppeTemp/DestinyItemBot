@@ -1,5 +1,5 @@
 const { ActivityTypes, CardFactory, TurnContext } = require('botbuilder');
-const { TextPrompt, ComponentDialog, DialogSet, DialogTurnStatus, WaterfallDialog } = require('botbuilder-dialogs');
+const { TextPrompt, ComponentDialog, DialogSet, DialogTurnStatus, WaterfallDialog, ChoicePrompt, ChoiceFactory } = require('botbuilder-dialogs');
 const { LuisRecognizer } = require('botbuilder-ai');
 const { BungieRequester } = require('../API/BungieRequester');
 const { LongRequest } = require('../dialogs/LongRequest');
@@ -13,11 +13,13 @@ dotenv.config({ path: ENV_FILE });
 const MAIN_DIALOG = 'MAIN_DIALOG';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
 const TEXT_PROMPT = 'TEXT_PROMPT';
+const CHOICE_PROMPT = 'CHOICE_PROMPT';
 
 const USER_PROFILE_PROPERTY = 'USER_PROFILE_PROPERTY';
+const REQUEST_STATE = "REQUEST_STATE";
 const DIALOGSTATE = "DIALOG_STATE";
 
-const LOGIN_USER = 'LOGIN_USER';
+const LOGIN_USER = 'LOGIN_USER_USER_PROPERTY';
 const WELCOMED_USER = 'WELCOMES_USER_PROPERTY';
 
 //Main dialog showed as first forwards to the dialog based on the user request
@@ -30,6 +32,7 @@ class MainDialog extends ComponentDialog {
         this.userState = userState;
 
         this.userProfileAccessor = userState.createProperty(USER_PROFILE_PROPERTY);
+        this.stateAccessor = userState.createProperty(REQUEST_STATE);
         this.dialogState = userState.createProperty(DIALOGSTATE)
 
         this.loginUser = userState.createProperty(LOGIN_USER);
@@ -37,10 +40,11 @@ class MainDialog extends ComponentDialog {
 
         //Used dialogs
         this.addDialog(new MoveItemDialog(userState));
+        this.addDialog(new ChoicePrompt(CHOICE_PROMPT));
         this.addDialog(new TextPrompt(TEXT_PROMPT))
             .addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
                 this.welcomeStep.bind(this),
-                this.loginStep.bind(this),
+                this.getLoginLnkStep.bind(this),
                 this.getCodeStep.bind(this),
                 this.ChooseAction.bind(this),
                 this.loopStep.bind(this)
@@ -66,8 +70,14 @@ class MainDialog extends ComponentDialog {
         const reply = {
             type: ActivityTypes.Message
         };
+
         const didBotWelcomedUser = await this.welcomedUserProperty.get(step.context, false);
+
         if (didBotWelcomedUser === false) {
+            var state = await this.stateAccessor.get(step.context, {});
+            state.code = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+            this.stateAccessor.set(step.context, state);
+
             var card = CardFactory.thumbnailCard(
                 'Salve Guardiano/a ! Sono il DestinyVendorBot. 🤖',
                 [{
@@ -86,11 +96,12 @@ class MainDialog extends ComponentDialog {
     }
 
     //Mostra la card di login
-    async loginStep(step) {
+    async getLoginLnkStep(step) {
         const reply = {
             type: ActivityTypes.Message
         };
         const didLoginUser = await this.loginUser.get(step.context, false);
+        var state = await this.stateAccessor.get(step.context, {});
         if (didLoginUser === false) {
             var card = CardFactory.thumbnailCard(
                 '⚠️ Login richiesto ! ⚠️',
@@ -98,17 +109,20 @@ class MainDialog extends ComponentDialog {
                 [{
                     type: 'openUrl',
                     title: 'Login',
-                    value: this.br.loginlink(),
+                    value: this.br.loginlink(state.code),
 
                 }],
                 {
-                    text: 'Premi sul pulsante per ottenere il codice di accesso e autenticarti nel bot. Una volta completata l\'operazoine non dovrai più ripeterla per 90 giorni.',
+                    text: 'Premi sul pulsante per autenticarti nel bot. Una volta completata l\'operazoine non dovrai più ripeterla per 90 giorni.',
                 }
             );
             reply.attachments = [card];
             await step.context.sendActivity(reply)
-            return await step.prompt(TEXT_PROMPT, 'Inserisci il codice di login ottenuto dalla pagina di Bungie: ');
-        }else{
+            return await step.prompt(CHOICE_PROMPT, {
+                prompt: 'Hai effettuato il login ?',
+                choices: ChoiceFactory.toChoices(["Login completato ✅"])
+            });
+        } else {
             return step.next();
         }
     }
@@ -116,16 +130,22 @@ class MainDialog extends ComponentDialog {
     //Ottiene il codice di accesso ed effettua il login
     async getCodeStep(step) {
         const didLoginUser = await this.loginUser.get(step.context, false);
+        var accessdata = await this.userProfileAccessor.get(step.context, {});
+        var state = await this.stateAccessor.get(step.context, {});
+
         if (didLoginUser === false) {
-            var accessdata = await this.userProfileAccessor.get(step.context, {});
-            accessdata = await this.br.getAccessData(step.result);
-            if (accessdata.error == 1){
-                step.context.sendActivity("Codice inserito non valido");
+            accessdata = await this.br.getAccessData(state.code);
+
+            if (accessdata.error == 1) {
+                step.context.sendActivity("❌ Errore sul login, assicurati di aver completato la procedura di login sul link sopra indicato e riprova.");
                 return await step.beginDialog(WATERFALL_DIALOG);
             }
-            await this.userProfileAccessor.set(step.context, accessdata);
+
             const name = await this.br.getName(accessdata.membership_id, process.env.MemberShipType);
+
+            await this.userProfileAccessor.set(step.context, accessdata);
             await this.loginUser.set(step.context, true);
+
             var message = {
                 "channelData": [
                     {
@@ -147,10 +167,10 @@ class MainDialog extends ComponentDialog {
         const reply = {
             type: ActivityTypes.Message
         };
-        var accessdata = await this.userProfileAccessor.get(step.context, {});     
+        var accessdata = await this.userProfileAccessor.get(step.context, {});
         accessdata = await this.br.refreshAccessData(accessdata.refresh_token);
         //Controllo scadenza refresh token
-        if (accessdata.error == 1){
+        if (accessdata.error == 1) {
             await step.context.sendActivity("🆘 Codice di accesso scaduto, è necessario rieseguire l'accesso.");
             await this.loginUser.set(step.context, false);
             return step.next();
@@ -158,30 +178,26 @@ class MainDialog extends ComponentDialog {
         await this.userProfileAccessor.set(step.context, accessdata);
         const conversationData = await this.dialogState.get(step.context, {});
         conversationData.conversationReference = TurnContext.getConversationReference(step.context.activity);
-        
-        if(step.context._activity.text.localeCompare("/restart") == 0){
+
+        if (step.context._activity.text.localeCompare("/restart") == 0) {
             await this.welcomedUserProperty.set(step.context, false);
             await this.loginUser.set(step.context, false);
             return await step.next();
         }
-        if(step.context._activity.text.localeCompare("/logout") == 0){
-            await this.loginUser.set(step.context, false);
-            return await step.next();
-        }
-        if(step.context._activity.text.localeCompare("/help") == 0){
+        if (step.context._activity.text.localeCompare("/help") == 0) {
 
             var message = {
                 "channelData": [
                     {
                         "method": "sendMessage",
                         "parameters": {
-                            "text": "Il <b>DestinyVendorBot </b> ti permette di effettuare diverse operazioni inviando comandi in linguaggio naturale, alcuni esempi di interrogazioni per le varie funzionalità sono: \n\n" + 
-                            "<b>🔸 Mostrare l'inventario dell'armaiolo </b>: \"Mostrami cosa vende l'armaiolo\", \"Mostrami coda vende Banshee\", \"Armaiolo\" o \"Mostrami le mod in vendita oggi. \n\n"+
-                            "<b>🔸 Mostrare l'inventario del ragno </b>: \"Mostrami cosa vende il Ragno\" o \"Ragno\". \n\n"+
-                            "<b>🔸 Mostrare l'inventario di Xur </b> (Disponibile solo dal Venerdi (18 ora solare, 19 ora legale) al Martedi (18 ora solare, 19 ora legale)): \"Mostrami cosa vende Xur\" o \"Xur\". \n\n"+
-                            "<b>🔸 Spostare uno specifico item ad un determinato personaggio</b>: \"Sposta {nome del item}\", \"Muovi {nome del item}\" o \"Trasferisci {nome del item}\". \n"+
-                            "\n\n"+
-                            "Il bot implementa anche l'utilizzo di alcuni comandi che è possibile richiamare tramite la KeyWord <b>/</b>, in questo modo verrà mostrato l'elenco dei comandi e una breve descrizione degli stessi.",
+                            "text": "Il <b>DestinyVendorBot </b> ti permette di effettuare diverse operazioni inviando comandi in linguaggio naturale, alcuni esempi di interrogazioni per le varie funzionalità sono: \n\n" +
+                                "<b>🔸 Mostrare l'inventario dell'armaiolo </b>: \"Mostrami cosa vende l'armaiolo\", \"Mostrami coda vende Banshee\", \"Armaiolo\" o \"Mostrami le mod in vendita oggi. \n\n" +
+                                "<b>🔸 Mostrare l'inventario del ragno </b>: \"Mostrami cosa vende il Ragno\" o \"Ragno\". \n\n" +
+                                "<b>🔸 Mostrare l'inventario di Xur </b> (Disponibile solo dal Venerdi (18 ora solare, 19 ora legale) al Martedi (18 ora solare, 19 ora legale)): \"Mostrami cosa vende Xur\" o \"Xur\". \n\n" +
+                                "<b>🔸 Spostare uno specifico item ad un determinato personaggio</b>: \"Sposta {nome del item}\", \"Muovi {nome del item}\" o \"Trasferisci {nome del item}\". \n" +
+                                "\n\n" +
+                                "Il bot implementa anche l'utilizzo di alcuni comandi che è possibile richiamare tramite la KeyWord <b>/</b>, in questo modo verrà mostrato l'elenco dei comandi e una breve descrizione degli stessi.",
                             "parse_mode": "HTML"
                         }
                     }
@@ -205,7 +221,7 @@ class MainDialog extends ComponentDialog {
         if (LuisRecognizer.topIntent(luisResult) === "GetXur") {
             LongRequest.getXurLong(this.br, accessdata, conversationData.conversationReference);
             await step.context.sendActivity("Sto cercando Xur nelle destinazioni, potrei chiedere a I Nove dove si trova 🤔. Ti invierò una notifica appena avrò sue notizie.");
-        } 
+        }
         //Spostamento di un item
         if (LuisRecognizer.topIntent(luisResult) === "MoveItem") {
             await step.context.sendActivity("Sei entrato nella modalità trasferimento item 🚚.")
@@ -221,7 +237,7 @@ class MainDialog extends ComponentDialog {
         }
         return await step.next();
     }
-    
+
     //Fa un loop
     async loopStep(step) {
         return await step.replaceDialog(this.id);

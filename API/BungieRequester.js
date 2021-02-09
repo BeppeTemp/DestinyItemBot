@@ -1,8 +1,10 @@
 const axios = require("axios");
 const qs = require("qs");
-const { CosmosClient } = require("@azure/cosmos");
 const { promisify } = require('util')
 const sleep = promisify(setTimeout)
+
+const { CosmosClient } = require("@azure/cosmos");
+const { QueueServiceClient } = require("@azure/storage-queue");
 
 
 const path = require('path');
@@ -22,10 +24,10 @@ class BungieRequester {
     }
 
     //Genera un link di login
-    loginlink() {
+    loginlink(state) {
         var responseType = "response_type=code&";
         var callBackUri = "redirect_uri=" + this.callBack + "&";
-        var state = "state=" + this.state;
+        var state = "state=" + state;
         console.log("Link generato.");
         return this.baseLoginPath + responseType + "client_id=" + this.clientId + "&" + callBackUri + state;
     }
@@ -46,8 +48,31 @@ class BungieRequester {
         return name;
     }
 
+    //Ottiene l'oauth code dalla coda
+    async getOauthCode(state){
+        const queueServiceClient = QueueServiceClient.fromConnectionString(process.env.StorageAccountEndPoint);
+
+        const queueClient = queueServiceClient.getQueueClient(state);
+
+        const code = await queueClient.receiveMessages()
+        .then(result => {
+            const message = result.receivedMessageItems[0];
+            queueServiceClient.deleteQueue(state);
+            return message.messageText;
+        }).catch( () => {
+            return null;
+        })
+
+        return code;
+    }
+
     //Ottiene i dati di accesso
-    async getAccessData(code) {
+    async getAccessData(state) {
+
+        await sleep(process.env.LoginDelay * 1000);
+
+        const code = await this.getOauthCode(state);
+
         var res = {}
         const data = {
             client_id: this.clientId,
@@ -59,11 +84,12 @@ class BungieRequester {
             .then(result => {
                 res = result.data;
                 res.error = 0;
+                console.log("Dati di accesso ottenuti.");
             }).catch(error => {
                 res.error = 1;
                 console.log(error.response.data);
+                console.log("Dati di accesso non ottenuti.");
             });
-        console.log("Dati di accesso ottenuti.");
         return res;
     }
 
@@ -592,7 +618,7 @@ class BungieRequester {
             data.transferToVault = false;
             data.characterId = characters[infoTransfer.indexCharacter].id;
 
-            await sleep(process.env.MoveRefreshTime + 1000);
+            await sleep(process.env.MoveRefreshTime * 1000);
 
             status = await axios.post(this.basePath + '/Destiny2/Actions/Items/TransferItem/', data, {
                 headers: {
