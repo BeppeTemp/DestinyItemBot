@@ -10,7 +10,7 @@ async function downloadManifest() {
   console.log("Download manifest avviato \n")
 
   // @ts-ignore
-  return await axios.get("https://www.bungie.net/common/destiny2_content/json/it/DestinyInventoryItemDefinition-28e06178-b2e8-420e-99ca-311865aaf5f0.json")
+  return await axios.get("https://www.bungie.net/common/destiny2_content/json/it/DestinyInventoryItemDefinition-4498a160-bf34-466f-ab2f-c81849526feb.json")
     .then(result => {
       console.log("Manifest Scaricato \n");
 
