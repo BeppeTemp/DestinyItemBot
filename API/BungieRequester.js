@@ -335,10 +335,10 @@ class BungieRequester {
                     let itemTwoStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[2]].stats;
                     let itemThreeStats = result.data.Response.itemComponents.stats.data[Object.keys(result.data.Response.itemComponents.stats.data)[3]].stats;
                     var itemsHash = {
-                        weapon: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[2]],
-                        one: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[0]],
-                        two: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[1]],
-                        three: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[3]],
+                        weapon: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[1]],
+                        one: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[2]],
+                        two: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[3]],
+                        three: result.data.Response.sales.data[Object.keys(result.data.Response.sales.data)[4]],
                     }
                     var itemsStats = {
                         one: {
@@ -409,9 +409,9 @@ class BungieRequester {
             const result = {
                 canPurchase: true,
                 weapon: {
-                    name: itemsDb[1].displayProperties.name,
-                    type: itemsDb[1].itemTypeDisplayName,
-                    icon: "https://www.bungie.net/" + itemsDb[1].displayProperties.icon,
+                    name: itemsDb[3].displayProperties.name,
+                    type: itemsDb[3].itemTypeDisplayName,
+                    icon: "https://www.bungie.net/" + itemsDb[3].displayProperties.icon,
                 },
                 armorOne: {
                     name: itemsDb[0].displayProperties.name + " - " + itemsDb[0].itemTypeDisplayName,
@@ -422,20 +422,20 @@ class BungieRequester {
                     icon: "https://www.bungie.net/" + itemsDb[0].displayProperties.icon,
                 },
                 armorTwo: {
-                    name: itemsDb[2].displayProperties.name + " - " + itemsDb[2].itemTypeDisplayName,
+                    name: itemsDb[1].displayProperties.name + " - " + itemsDb[1].itemTypeDisplayName,
                     stats: {
                         all: items.itemsStats.two,
                         tot: items.itemsStats.two.tot(),
                     },
-                    icon: "https://www.bungie.net/" + itemsDb[2].displayProperties.icon,
+                    icon: "https://www.bungie.net/" + itemsDb[1].displayProperties.icon,
                 },
                 armorThree: {
-                    name: itemsDb[3].displayProperties.name + " - " + itemsDb[3].itemTypeDisplayName,
+                    name: itemsDb[2].displayProperties.name + " - " + itemsDb[2].itemTypeDisplayName,
                     stats: {
                         all: items.itemsStats.three,
                         tot: items.itemsStats.three.tot(),
                     },
-                    icon: "https://www.bungie.net/" + itemsDb[3].displayProperties.icon,
+                    icon: "https://www.bungie.net/" + itemsDb[2].displayProperties.icon,
                 },
             }
             console.log("Dati di Xur ottenuti");

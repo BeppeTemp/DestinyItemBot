@@ -1,1 +1,3 @@
 Benvenuto nel DestinyVendorBot 🤖, scrivi /start per cominciare ad esplorare tutte le sue fantastiche funzionalità 🤩🦾.
+
+Bot basato sulle bungie-net API per la gestione dell'inventario e dei vendors di Destiny 2. 
