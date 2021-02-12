@@ -135,7 +135,7 @@ class MainDialog extends ComponentDialog {
             accessdata = await this.br.getAccessData(state.code);
 
             if (accessdata.error == 1) {
-                step.context.sendActivity("❌ Errore sul login, assicurati di aver completato la procedura di login sul link sopra indicato e riprova.");
+                step.context.sendActivity("❌ Errore sul login, riprova rieseguendo l'accesso dal link sotto indicato.");
                 return await step.beginDialog(WATERFALL_DIALOG);
             }
 
