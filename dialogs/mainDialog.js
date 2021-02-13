@@ -46,7 +46,7 @@ class MainDialog extends ComponentDialog {
                 this.welcomeStep.bind(this),
                 this.getLoginLnkStep.bind(this),
                 this.getCodeStep.bind(this),
-                this.ChooseAction.bind(this),
+                this.chooseActionStep.bind(this),
                 this.loopStep.bind(this)
             ]));
 
@@ -161,7 +161,7 @@ class MainDialog extends ComponentDialog {
     }
 
     // Forwards to the correct dialog based on the menu option or the intent recognized by LUIS
-    async ChooseAction(step) {
+    async chooseActionStep(step) {
         const reply = {
             type: ActivityTypes.Message
         };
