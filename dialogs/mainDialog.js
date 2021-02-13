@@ -44,7 +44,7 @@ class MainDialog extends ComponentDialog {
         this.addDialog(new TextPrompt(TEXT_PROMPT))
             .addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
                 this.welcomeStep.bind(this),
-                this.getLoginLnkStep.bind(this),
+                this.getLoginStep.bind(this),
                 this.getCodeStep.bind(this),
                 this.chooseActionStep.bind(this),
                 this.loopStep.bind(this)
@@ -90,7 +90,7 @@ class MainDialog extends ComponentDialog {
     }
 
     //Mostra la card di login
-    async getLoginLnkStep(step) {
+    async getLoginStep(step) {
         const reply = {
             type: ActivityTypes.Message
         };
@@ -135,7 +135,7 @@ class MainDialog extends ComponentDialog {
             accessdata = await this.br.getAccessData(state.code);
 
             if (accessdata.error == 1) {
-                step.context.sendActivity("❌ Errore sul login, riprova rieseguendo l'accesso dal link sotto indicato.");
+                step.context.sendActivity("❌ Errore sul login, riprova rieseguendo l'accesso all'ultimo link generato.");
                 return await step.beginDialog(WATERFALL_DIALOG);
             }
 
